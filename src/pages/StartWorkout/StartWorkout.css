@@ -1,0 +1,214 @@
+/* ─── Start Workout page ──────────────────────────────────────────────────── */
+
+.sw-page { max-width: 780px; }
+
+/* Timer */
+.timer-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.timer-ring-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 22px;
+}
+.timer-svg {
+  width: 200px;
+  height: 200px;
+  transform: rotate(-90deg);
+}
+.ring-track {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 10;
+}
+.ring-progress {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset .6s linear;
+}
+.timer-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.timer-digits {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  transition: color .3s;
+}
+.timer-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.timer-play-hint {
+  position: absolute;
+  right: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 18px;
+  transition: color .15s;
+}
+.timer-play-hint:hover { color: var(--orange); }
+
+/* Controls */
+.timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ctrl-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all .18s;
+  box-shadow: var(--shadow-sm);
+}
+.ctrl-btn:hover { box-shadow: var(--shadow); }
+.ctrl-primary {
+  width: 66px;
+  height: 66px;
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+  font-size: 24px;
+}
+.ctrl-primary:hover { background: var(--orange-dark); transform: scale(1.06); }
+
+/* ── Exercise cards ── */
+.exercise-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.sw-exercise-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.sw-exercise-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+/* Image container — aspect-ratio preserves full image visibility */
+.exercise-img-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--orange-light);
+  position: relative;
+  flex-shrink: 0;
+}
+.exercise-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform .3s ease;
+}
+.sw-exercise-card:hover .exercise-img-wrap img {
+  transform: scale(1.04);
+}
+.exercise-img-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+}
+
+/* Card body */
+.exercise-body {
+  padding: 14px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.exercise-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+.exercise-desc { font-size: 12.5px; color: var(--muted); }
+.exercise-up-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+.up-next-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* Finish bar */
+.finish-bar {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.finish-btn {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  justify-content: center;
+  padding: 14px 24px;
+  font-size: 15px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .sw-page { max-width: 100%; }
+
+  .exercise-row {
+    grid-template-columns: 1fr;
+  }
+
+  .timer-ring-container {
+    width: 170px;
+    height: 170px;
+  }
+  .timer-svg {
+    width: 170px;
+    height: 170px;
+  }
+  .timer-digits { font-size: 34px; }
+
+  .finish-btn { max-width: 100%; }
+}

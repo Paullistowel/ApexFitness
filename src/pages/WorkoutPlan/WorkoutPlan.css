@@ -1,0 +1,208 @@
+/* ─── Workout Plan page ───────────────────────────────────────────────────── */
+
+.wp-page { max-width: 960px; }
+
+.wp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wp-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Week label */
+.week-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 12px;
+}
+
+/* Weekly grid — responsive */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.week-day-card {
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--white);
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.week-day-card:hover    { box-shadow: var(--shadow); }
+.week-day-card.today    { border: 2px solid var(--orange); }
+.week-day-card.rest     { background: var(--bg); }
+.week-day-card.selected { box-shadow: var(--shadow), 0 0 0 2px var(--orange-mid); }
+
+.wdc-day-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 7px;
+  color: var(--muted);
+}
+.week-day-card.today .wdc-day-name { color: var(--orange); }
+
+.wdc-exercises {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 6px 0 10px;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.wdc-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--text-2);
+  transition: all .15s ease;
+}
+.wdc-start-btn:hover { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+/* Day tabs */
+.day-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.day-tabs::-webkit-scrollbar { display: none; }
+.day-tab {
+  padding: 9px 16px;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .14s ease;
+  white-space: nowrap;
+}
+.day-tab.active  { color: var(--orange); border-bottom-color: var(--orange); font-weight: 700; }
+.day-tab:hover:not(.active) { color: var(--text); }
+
+.day-meta { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+
+/* ── Plan exercises grid (responsive) ── */
+.plan-exercises-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+/* Exercise card in plan */
+.plan-exercise-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--orange-mid);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.plan-exercise-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+/* Image wrapper — intrinsic ratio, never cuts off */
+.plan-ex-img-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--orange-light);
+  flex-shrink: 0;
+}
+.plan-ex-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform .3s ease;
+}
+.plan-exercise-card:hover .plan-ex-img {
+  transform: scale(1.04);
+}
+.plan-ex-img-ph {
+  width: 100%;
+  height: 100%;
+  background: var(--orange-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+/* Card body */
+.plan-ex-body {
+  padding: 12px 14px 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plan-ex-name {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.plan-ex-meta  { font-size: 11.5px; color: var(--muted); }
+.plan-ex-actions {
+  display: flex;
+  gap: 7px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* Empty day */
+.empty-day {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--muted);
+}
+.empty-day-icon { font-size: 44px; margin-bottom: 12px; }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .week-grid { grid-template-columns: repeat(3, 1fr); }
+  .plan-exercises-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .week-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .wp-page { max-width: 100%; }
+  .week-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .week-day-card { padding: 10px 12px; }
+  .plan-exercises-grid { grid-template-columns: 1fr; }
+  .wp-header { flex-direction: column; align-items: flex-start; }
+  .wp-header-actions { width: 100%; justify-content: flex-end; }
+}
