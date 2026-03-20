@@ -32,6 +32,16 @@
 
   /* Border radius used by shadcn triggers */
   --radius: 0.75rem;                   /* rounded-xl */
+
+  /* ── Dashboard sidebar (light white theme, orange accents) ── */
+  --sidebar:                   255 255 255;   /* white */
+  --sidebar-foreground:        17 24 39;      /* gray-900 */
+  --sidebar-primary:           249 115 22;    /* orange-500 */
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent:            255 247 237;   /* orange-50 */
+  --sidebar-accent-foreground: 234 88 12;     /* orange-600 */
+  --sidebar-border:            243 244 246;   /* gray-100 */
+  --sidebar-ring:              249 115 22;    /* orange-500 */
 }
 
 /* Hide scrollbar globally while keeping scroll functionality */

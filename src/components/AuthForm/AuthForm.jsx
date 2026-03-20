@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ApexLogo from "../../Assets/ApexFitness.logo.png";
 import GoogleLogo from "../../Assets/google (1).png";
@@ -9,6 +9,7 @@ import Field from "../Shared/Field";
 export default function AuthForm() {
   const [tab, setTab] = useState("login");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="w-full max-w-[420px]">
@@ -52,7 +53,7 @@ export default function AuthForm() {
             <motion.form
               key="login"
               className="space-y-5"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={(e) => { e.preventDefault(); navigate("/dashboard"); }}
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
