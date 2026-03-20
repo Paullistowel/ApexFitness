@@ -14,6 +14,16 @@ import {
 } from "lucide-react";
 import NavBar from "../../components/LandingComponent/NavBar";
 import Footer from "../../components/Shared/Footer";
+import ContactInfoCard from "../../components/ContactPage/ContactInfoCard";
+import SelectField from "../../components/Shared/SelectField";
+
+const SUBJECT_OPTIONS = [
+  { label: "Membership Enquiry",  value: "membership" },
+  { label: "Personal Training",   value: "training"   },
+  { label: "Programs & Classes",  value: "programs"   },
+  { label: "Billing & Payments",  value: "billing"    },
+  { label: "Other",               value: "other"      },
+];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -146,27 +156,7 @@ export default function ContactPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {contactInfo.map((item, i) => (
-            <motion.div
-              key={item.label}
-              className="rounded-2xl bg-white/5 border border-white/5 hover:border-orange-500/30 p-6 flex flex-col gap-4 transition-all duration-300 group"
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, delay: i * 0.1, ease: "easeOut" }}
-            >
-              <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.bg} group-hover:scale-110 transition-transform duration-300`}
-              >
-                <item.icon className={`w-6 h-6 ${item.color}`} />
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
-                  {item.label}
-                </p>
-                <p className="text-white font-semibold">{item.value}</p>
-                <p className="text-gray-500 text-sm mt-0.5">{item.sub}</p>
-              </div>
-            </motion.div>
+            <ContactInfoCard key={item.label} {...item} index={i} />
           ))}
         </div>
       </section>
@@ -247,27 +237,13 @@ export default function ContactPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-gray-400 text-sm font-medium">
-                      Subject
-                    </label>
-                    <select
-                      name="subject"
-                      value={form.subject}
-                      onChange={handleChange}
-                      required
-                      className="bg-[#1a0f08] border border-white/10 focus:border-orange-500/60 outline-none rounded-xl px-4 py-3 text-white text-sm transition-colors appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled>
-                        Select a subject
-                      </option>
-                      <option value="membership">Membership Enquiry</option>
-                      <option value="training">Personal Training</option>
-                      <option value="programs">Programs & Classes</option>
-                      <option value="billing">Billing & Payments</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
+                  <SelectField
+                    label="Subject"
+                    options={SUBJECT_OPTIONS}
+                    value={form.subject}
+                    onChange={(val) => setForm((prev) => ({ ...prev, subject: val }))}
+                    required
+                  />
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-400 text-sm font-medium">

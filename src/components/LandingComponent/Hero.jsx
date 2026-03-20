@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ArrowRight, Play, Users, Calendar, Award } from "lucide-react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -121,13 +122,13 @@ const Hero = () => {
               custom={3}
               className="flex flex-wrap gap-4"
             >
-              <a
-                href="#contact"
+              <Link
+                to="/auth"
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white px-8 py-4 rounded-full font-semibold transition-all transform hover:scale-105 shadow-lg hover:shadow-orange-500/25"
               >
                 Get Started
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
+              </Link>
               <a
                 href="#programs"
                 className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-full font-semibold transition-all"
