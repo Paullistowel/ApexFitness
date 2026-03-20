@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     "./index.html",         // Vite entry
-    "./src/**/*.{ts,tsx}"   // All TypeScript & TSX files
+    "./src/**/*.{ts,tsx,jsx,js}"   // All TypeScript & TSX files
   ],
   theme: {
     extend: {},
