@@ -34,7 +34,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="relative bg-black border-t border-gray-900">
+    <footer className="relative bg-background border-t border-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand */}
@@ -48,7 +48,7 @@ const Footer = () => {
                 />
               </div>
             </div>
-            <p className="text-gray-400 mb-6 max-w-sm leading-relaxed">
+            <p className="text-muted mb-6 max-w-sm leading-relaxed">
               Transform your body and mind with our state-of-the-art facilities,
               expert trainers, and supportive community.
             </p>
@@ -58,10 +58,10 @@ const Footer = () => {
                 <a
                   key={social.label}
                   href={social.href}
-                  className="w-10 h-10 rounded-full bg-gray-900 hover:bg-orange-600 flex items-center justify-center transition-all duration-300 group"
+                  className="w-10 h-10 rounded-full bg-gray-900 hover:bg-primary flex items-center justify-center transition-all duration-300 group"
                   aria-label={social.label}
                 >
-                  <social.icon className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                  <social.icon className="w-5 h-5 text-muted group-hover:text-foreground transition-colors" />
                 </a>
               ))}
             </div>
@@ -69,13 +69,13 @@ const Footer = () => {
 
           {/* Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
+            <h4 className="text-foreground font-semibold mb-4">Company</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-orange-500 transition-colors text-sm"
+                    className="text-muted hover:text-primary transition-colors text-sm"
                   >
                     {link.name}
                   </a>
@@ -85,13 +85,13 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Support</h4>
+            <h4 className="text-foreground font-semibold mb-4">Support</h4>
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-orange-500 transition-colors text-sm"
+                    className="text-muted hover:text-primary transition-colors text-sm"
                   >
                     {link.name}
                   </a>
@@ -101,13 +101,13 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4">Programs</h4>
+            <h4 className="text-foreground font-semibold mb-4">Programs</h4>
             <ul className="space-y-3">
               {footerLinks.programs.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-orange-500 transition-colors text-sm"
+                    className="text-muted hover:text-primary transition-colors text-sm"
                   >
                     {link.name}
                   </a>
@@ -119,15 +119,15 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-900 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted text-sm">
             © {new Date().getFullYear()} Fitness Gym. All rights reserved.
           </p>
           <button
             onClick={scrollToTop}
-            className="w-10 h-10 rounded-full bg-orange-600 hover:bg-orange-700 flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-orange-600/30"
+            className="w-10 h-10 rounded-full bg-primary hover:bg-primary flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-primary/30"
             aria-label="Scroll to top"
           >
-            <ArrowUp className="w-5 h-5 text-white" />
+            <ArrowUp className="w-5 h-5 text-foreground" />
           </button>
         </div>
       </div>

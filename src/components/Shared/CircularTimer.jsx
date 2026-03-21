@@ -46,16 +46,16 @@ export default function CircularTimer({ timeLeft, totalTime, isRest }) {
             <span className="text-xs font-bold text-sky-400 uppercase tracking-widest mb-1">
               Rest
             </span>
-            <span className="text-5xl font-black text-white">
+            <span className="text-5xl font-black text-foreground">
               {mm}:{ss}
             </span>
           </>
         ) : (
           <>
-            <span className="text-4xl font-black text-white">
+            <span className="text-4xl font-black text-foreground">
               {mm}:{ss}
             </span>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-1">
+            <span className="text-xs font-semibold text-muted uppercase tracking-widest mt-1">
               Workout Timer
             </span>
           </>

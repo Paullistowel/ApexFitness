@@ -15,7 +15,7 @@ const Navbar = () => {
 
   const linkClass = (href) =>
     `transition-colors duration-300 text-sm font-medium uppercase tracking-wide ${
-      pathname === href ? "text-orange-500" : "text-gray-300 hover:text-orange-500"
+      pathname === href ? "text-primary" : "text-foreground/80 hover:text-primary"
     }`;
 
   return (
@@ -34,7 +34,7 @@ const Navbar = () => {
                 <a
                   key={link.name}
                   href={link.href}
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-300 text-sm font-medium uppercase tracking-wide"
+                  className="text-foreground/80 hover:text-primary transition-colors duration-300 text-sm font-medium uppercase tracking-wide"
                 >
                   {link.name}
                 </a>
@@ -60,7 +60,7 @@ const Navbar = () => {
             </Link>
             <Link
               to="/auth"
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-orange-600/30"
+              className="bg-primary hover:bg-primary text-foreground px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/30"
             >
               Get Started
             </Link>
@@ -68,7 +68,7 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white p-2"
+            className="md:hidden text-foreground p-2"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -84,7 +84,7 @@ const Navbar = () => {
                   <a
                     key={link.name}
                     href={link.href}
-                    className="text-gray-300 hover:text-orange-500 transition-colors duration-300 text-sm font-medium uppercase tracking-wide px-2"
+                    className="text-foreground/80 hover:text-primary transition-colors duration-300 text-sm font-medium uppercase tracking-wide px-2"
                     onClick={() => setIsOpen(false)}
                   >
                     {link.name}
@@ -109,7 +109,7 @@ const Navbar = () => {
               </Link>
               <Link
                 to="/auth"
-                className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 w-fit mx-2"
+                className="bg-primary hover:bg-primary text-foreground px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 w-fit mx-2"
                 onClick={() => setIsOpen(false)}
               >
                 Get Started

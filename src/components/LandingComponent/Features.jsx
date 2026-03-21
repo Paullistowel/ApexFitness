@@ -33,7 +33,7 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="py-20 sm:py-28 bg-[#1a0f08]">
+    <section id="features" className="py-20 sm:py-28 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -47,7 +47,7 @@ export default function Features() {
             Our Best Features
           </p>
           <h2
-            className="text-3xl sm:text-4xl font-bold text-white"
+            className="text-3xl sm:text-4xl font-bold text-foreground"
             style={{ fontFamily: "'Oswald', sans-serif" }}
           >
             WHY <span className="text-[#A32D2D]">CHOOSE</span> US?
@@ -89,7 +89,7 @@ export default function Features() {
               >
                 {feature.title}
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-muted text-sm leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

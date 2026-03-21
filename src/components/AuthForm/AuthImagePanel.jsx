@@ -18,10 +18,10 @@ export default function AuthImagePanel({ quote, animate = false }) {
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.28)_0%,rgba(0,0,0,0.16)_55%,rgba(0,0,0,0.58)_100%)]" />
       <div className="absolute inset-y-0 right-0 w-24 bg-[linear-gradient(180deg,rgba(0,0,0,0.22),rgba(0,0,0,0.55))]" />
       <div className="absolute bottom-12 left-10 right-10">
-        <p className="text-2xl font-bold text-white leading-snug drop-shadow">
+        <p className="text-2xl font-bold text-foreground leading-snug drop-shadow">
           "{quote}"
         </p>
-        <p className="mt-2 text-orange-400 text-sm font-medium">— Apex Fitness</p>
+        <p className="mt-2 text-primary text-sm font-medium">— Apex Fitness</p>
       </div>
     </div>
   );

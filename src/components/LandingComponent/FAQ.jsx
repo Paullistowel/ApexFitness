@@ -43,7 +43,7 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="py-20 lg:py-32 bg-[#1a0f08]">
+    <section id="faq" className="py-20 lg:py-32 bg-surface">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
@@ -53,13 +53,13 @@ const FAQ = () => {
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <span className="text-orange-500 font-semibold text-sm uppercase tracking-wider">
+          <span className="text-primary font-semibold text-sm uppercase tracking-wider">
             FAQ
           </span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mt-3">
-            Frequently Asked <span className="text-orange-500">Questions</span>
+          <h2 className="text-4xl lg:text-5xl font-bold text-foreground mt-3">
+            Frequently Asked <span className="text-primary">Questions</span>
           </h2>
-          <p className="text-gray-400 text-lg mt-4">
+          <p className="text-muted text-lg mt-4">
             Find answers to common questions about our gym and services.
           </p>
         </motion.div>
@@ -73,10 +73,10 @@ const FAQ = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
-              className={`bg-white/5 border border-white/5 rounded-2xl overflow-hidden transition-all duration-300 ${
+              className={`bg-overlay/5 border border-border/5 rounded-2xl overflow-hidden transition-all duration-300 ${
                 openIndex === index
-                  ? "border-orange-500/30"
-                  : "hover:border-white/10"
+                  ? "border-primary/30"
+                  : "hover:border-border/10"
               }`}
             >
               <button
@@ -86,22 +86,22 @@ const FAQ = () => {
                 <div className="flex items-center gap-4">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                      openIndex === index ? "bg-orange-500" : "bg-orange-500/10"
+                      openIndex === index ? "bg-primary" : "bg-primary/10"
                     }`}
                   >
                     <HelpCircle
                       className={`w-5 h-5 transition-colors ${
-                        openIndex === index ? "text-white" : "text-orange-500"
+                        openIndex === index ? "text-foreground" : "text-primary"
                       }`}
                     />
                   </div>
-                  <span className="text-white font-semibold text-lg">
+                  <span className="text-foreground font-semibold text-lg">
                     {faq.question}
                   </span>
                 </div>
                 <ChevronDown
-                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${
-                    openIndex === index ? "rotate-180 text-orange-500" : ""
+                  className={`w-5 h-5 text-muted transition-transform duration-300 ${
+                    openIndex === index ? "rotate-180 text-primary" : ""
                   }`}
                 />
               </button>
@@ -112,7 +112,7 @@ const FAQ = () => {
                 }`}
               >
                 <div className="px-6 pb-6 pl-20">
-                  <p className="text-gray-400 leading-relaxed">{faq.answer}</p>
+                  <p className="text-muted leading-relaxed">{faq.answer}</p>
                 </div>
               </div>
             </motion.div>

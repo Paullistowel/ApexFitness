@@ -58,7 +58,7 @@ const Hero = () => {
         </video>
 
         {/* Dark overlay so text remains readable */}
-        <div className="absolute inset-0 bg-[#1a0f08]/75"></div>
+        <div className="absolute inset-0 bg-surface/75"></div>
       </div>
 
       {/* Background Pattern on top of video */}
@@ -81,10 +81,10 @@ const Hero = () => {
               initial="hidden"
               animate="visible"
               custom={0}
-              className="inline-flex items-start gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-2"
+              className="inline-flex items-start gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2"
             >
-              <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-              <span className="text-orange-400 text-sm font-medium">
+              <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+              <span className="text-primary text-sm font-medium">
                 Build Strength
               </span>
             </motion.div>
@@ -94,10 +94,10 @@ const Hero = () => {
               initial="hidden"
               animate="visible"
               custom={1}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight"
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground leading-tight"
             >
               Your{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-700">
                 Fitness
               </span>{" "}
               Journey Starts Here
@@ -108,7 +108,7 @@ const Hero = () => {
               initial="hidden"
               animate="visible"
               custom={2}
-              className="text-gray-400 text-lg max-w-lg leading-relaxed"
+              className="text-muted text-lg max-w-lg leading-relaxed"
             >
               Transform your body and mind with our world-class facilities,
               expert trainers, and a supportive community dedicated to your
@@ -124,14 +124,14 @@ const Hero = () => {
             >
               <Link
                 to="/auth"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white px-8 py-4 rounded-full font-semibold transition-all transform hover:scale-105 shadow-lg hover:shadow-orange-500/25"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-primary to-blue-700 hover:from-primary hover:to-blue-700 text-foreground px-8 py-4 rounded-full font-semibold transition-all transform hover:scale-105 shadow-lg hover:shadow-primary/25"
               >
                 Get Started
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a
                 href="#programs"
-                className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-full font-semibold transition-all"
+                className="inline-flex items-center gap-2 bg-overlay/5 hover:bg-overlay/10 border border-border/10 text-foreground px-8 py-4 rounded-full font-semibold transition-all"
               >
                 <Play className="w-5 h-5" />
                 Watch Video
@@ -144,20 +144,20 @@ const Hero = () => {
               initial="hidden"
               animate="visible"
               custom={4}
-              className="flex flex-wrap gap-8 pt-8 border-t border-white/10"
+              className="flex flex-wrap gap-8 pt-8 border-t border-border/10"
             >
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
                   <div key={stat.label} className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-orange-500" />
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-foreground">
                         {stat.value}
                       </div>
-                      <div className="text-sm text-gray-400">{stat.label}</div>
+                      <div className="text-sm text-muted">{stat.label}</div>
                     </div>
                   </div>
                 );

@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import {
   Play, Pause, RotateCcw, SkipForward,
   CheckCircle2, ChevronRight, Flame, Clock,
-  Dumbbell, Trophy, ChevronLeft, ListChecks,
+  Dumbbell, Trophy, ListChecks,
 } from "lucide-react";
 import CircularTimer from "../../../components/Shared/CircularTimer";
 
@@ -43,29 +43,29 @@ function WorkoutComplete({ totalTime, onClose }) {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
-      className="fixed inset-0 bg-[#1a0f08] z-50 flex flex-col items-center justify-center gap-6 p-8"
+      className="fixed inset-0 bg-surface z-50 flex flex-col items-center justify-center gap-6 p-8"
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="relative z-10 flex flex-col items-center gap-6 w-full max-w-sm">
         <motion.div
           initial={{ scale: 0 }} animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 220, damping: 14, delay: 0.2 }}
-          className="w-24 h-24 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center"
+          className="w-24 h-24 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center"
         >
-          <Trophy size={48} className="text-orange-500" />
+          <Trophy size={48} className="text-primary" />
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="text-center">
-          <h1 className="text-3xl font-black text-white">Workout Complete! 🎉</h1>
-          <p className="text-gray-400 mt-2">Great job! You crushed today's session.</p>
+          <h1 className="text-3xl font-black text-foreground">Workout Complete! 🎉</h1>
+          <p className="text-muted mt-2">Great job! You crushed today's session.</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="grid grid-cols-3 gap-4 w-full">
           {stats.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-2">
-              <Icon size={20} className="text-orange-500" />
-              <span className="text-lg font-black text-white">{value}</span>
-              <span className="text-xs text-gray-500">{label}</span>
+            <div key={label} className="bg-overlay/5 border border-border/10 rounded-2xl p-4 flex flex-col items-center gap-2">
+              <Icon size={20} className="text-primary" />
+              <span className="text-lg font-black text-foreground">{value}</span>
+              <span className="text-xs text-muted">{label}</span>
             </div>
           ))}
         </motion.div>
@@ -73,7 +73,7 @@ function WorkoutComplete({ totalTime, onClose }) {
         <motion.button
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
           onClick={onClose}
-          className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white font-bold rounded-full transition-all shadow-lg shadow-orange-500/20"
+          className="w-full py-3 bg-gradient-to-r from-primary to-blue-700 hover:from-primary hover:to-blue-700 text-foreground font-bold rounded-full transition-all shadow-lg shadow-primary/20"
         >
           Back to Dashboard
         </motion.button>
@@ -97,15 +97,15 @@ function ExerciseCard({ exercise, isRest, currentSet, direction }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent rounded-t-2xl" />
       <div className="absolute bottom-4 left-4 right-4">
         <div className="flex items-center gap-2 mb-1">
-          <span className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+          <span className="bg-primary text-foreground text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
             {exercise.muscle}
           </span>
           {isRest && (
-            <span className="bg-sky-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Rest</span>
+            <span className="bg-sky-500 text-foreground text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Rest</span>
           )}
         </div>
-        <h2 className="text-lg sm:text-xl font-black text-white">{exercise.name}</h2>
-        <p className="text-sm text-white/60 mt-0.5 line-clamp-1">{exercise.instruction}</p>
+        <h2 className="text-lg sm:text-xl font-black text-foreground">{exercise.name}</h2>
+        <p className="text-sm text-foreground/60 mt-0.5 line-clamp-1">{exercise.instruction}</p>
       </div>
     </motion.div>
   );
@@ -204,7 +204,7 @@ export default function StartWorkout() {
 
   // ── Shared sub-sections ──────────────────────────────────────────────────────
   const exerciseCard = (
-    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-overlay/5 border border-border/10 rounded-2xl overflow-hidden">
       <AnimatePresence mode="wait" initial={false}>
         <ExerciseCard
           key={current.id} exercise={current}
@@ -213,19 +213,19 @@ export default function StartWorkout() {
       </AnimatePresence>
 
       {/* Set indicators */}
-      <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+      <div className="px-5 py-3 border-b border-border/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {Array.from({ length: current.sets }).map((_, i) => (
             <div key={i} className={`h-2 w-8 rounded-full transition-colors ${
-              i < currentSet - 1 ? "bg-orange-500"
-              : i === currentSet - 1 ? isRest ? "bg-sky-400" : "bg-orange-400"
-              : "bg-white/10"
+              i < currentSet - 1 ? "bg-primary"
+              : i === currentSet - 1 ? isRest ? "bg-sky-400" : "bg-primary"
+              : "bg-overlay/10"
             }`} />
           ))}
-          <span className="text-xs font-semibold text-gray-400 ml-1">Set {currentSet} of {current.sets}</span>
+          <span className="text-xs font-semibold text-muted ml-1">Set {currentSet} of {current.sets}</span>
         </div>
         {current.reps && (
-          <span className="text-xs font-bold text-gray-300 bg-white/10 px-3 py-1 rounded-full">
+          <span className="text-xs font-bold text-foreground/80 bg-overlay/10 px-3 py-1 rounded-full">
             {current.reps} reps
           </span>
         )}
@@ -239,17 +239,17 @@ export default function StartWorkout() {
           isRest={isRest}
         />
         <div className="flex items-center gap-4">
-          <button onClick={handleReset} className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors">
-            <RotateCcw size={18} className="text-gray-300" />
+          <button onClick={handleReset} className="w-11 h-11 rounded-full bg-overlay/10 hover:bg-overlay/15 flex items-center justify-center transition-colors">
+            <RotateCcw size={18} className="text-foreground/80" />
           </button>
           <button
             onClick={() => setIsPlaying((p) => !p)}
-            className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 flex items-center justify-center transition-all shadow-lg shadow-orange-500/30"
+            className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-blue-700 hover:from-primary hover:to-blue-700 flex items-center justify-center transition-all shadow-lg shadow-primary/30"
           >
-            {isPlaying ? <Pause size={24} className="text-white" /> : <Play size={24} className="text-white ml-1" />}
+            {isPlaying ? <Pause size={24} className="text-foreground" /> : <Play size={24} className="text-foreground ml-1" />}
           </button>
-          <button onClick={handleSkip} className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors">
-            <SkipForward size={18} className="text-gray-300" />
+          <button onClick={handleSkip} className="w-11 h-11 rounded-full bg-overlay/10 hover:bg-overlay/15 flex items-center justify-center transition-colors">
+            <SkipForward size={18} className="text-foreground/80" />
           </button>
         </div>
       </div>
@@ -257,20 +257,20 @@ export default function StartWorkout() {
   );
 
   const upNext = next && (
-    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-overlay/5 border border-border/10 rounded-2xl overflow-hidden">
       <div className="relative h-36">
         <img src={next.img} alt={next.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute top-3 left-3">
-          <span className="bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase backdrop-blur-sm">Up Next</span>
+          <span className="bg-black/50 text-foreground text-[10px] font-bold px-2 py-1 rounded-full uppercase backdrop-blur-sm">Up Next</span>
         </div>
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
           <div>
-            <p className="text-white font-black text-base">{next.name}</p>
-            <p className="text-white/60 text-xs">{next.sets} sets · {next.duration}s</p>
+            <p className="text-foreground font-black text-base">{next.name}</p>
+            <p className="text-foreground/60 text-xs">{next.sets} sets · {next.duration}s</p>
           </div>
-          <button onClick={handleSkip} className="w-8 h-8 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors">
-            <ChevronRight size={16} className="text-white" />
+          <button onClick={handleSkip} className="w-8 h-8 rounded-full bg-overlay/15 backdrop-blur-sm flex items-center justify-center hover:bg-overlay/30 transition-colors">
+            <ChevronRight size={16} className="text-foreground" />
           </button>
         </div>
       </div>
@@ -278,42 +278,42 @@ export default function StartWorkout() {
   );
 
   const exerciseList = (
-    <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+    <div className="bg-overlay/5 border border-border/10 rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/10">
         <div className="flex items-center gap-2">
-          <ListChecks size={16} className="text-orange-500" />
-          <span className="text-sm font-bold text-white">Exercise List</span>
+          <ListChecks size={16} className="text-primary" />
+          <span className="text-sm font-bold text-foreground">Exercise List</span>
         </div>
-        <span className="text-xs text-gray-500">{totalExercises} exercises</span>
+        <span className="text-xs text-muted">{totalExercises} exercises</span>
       </div>
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-border/5">
         {workoutExercises.map((ex, idx) => {
           const isDone    = completedExercises.includes(ex.id);
           const isCurrent = idx === currentIdx;
           return (
-            <div key={ex.id} className={`flex items-center gap-3 px-4 py-3 transition-colors ${isCurrent ? "bg-orange-500/10" : ""}`}>
+            <div key={ex.id} className={`flex items-center gap-3 px-4 py-3 transition-colors ${isCurrent ? "bg-primary/10" : ""}`}>
               <div className="shrink-0">
                 {isDone ? (
                   <CheckCircle2 size={18} className="text-green-500" />
                 ) : isCurrent ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-orange-500 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                  <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
                   </div>
                 ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-white/20" />
+                  <div className="w-5 h-5 rounded-full border-2 border-border/20" />
                 )}
               </div>
               <img src={ex.img} alt={ex.name} className="w-9 h-9 rounded-lg object-cover shrink-0 opacity-80" />
               <div className="min-w-0 flex-1">
-                <p className={`text-sm font-semibold truncate ${isCurrent ? "text-orange-400" : isDone ? "text-gray-600 line-through" : "text-gray-300"}`}>
+                <p className={`text-sm font-semibold truncate ${isCurrent ? "text-primary" : isDone ? "text-subtle line-through" : "text-foreground/80"}`}>
                   {ex.name}
                 </p>
-                <p className="text-[11px] text-gray-600">
+                <p className="text-[11px] text-subtle">
                   {ex.sets} sets · {ex.reps ? `${ex.reps} reps` : `${ex.duration}s`}
                 </p>
               </div>
               {isCurrent && (
-                <span className="shrink-0 text-[10px] font-bold text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full">Now</span>
+                <span className="shrink-0 text-[10px] font-bold text-primary bg-primary/15 px-2 py-0.5 rounded-full">Now</span>
               )}
             </div>
           );
@@ -325,7 +325,7 @@ export default function StartWorkout() {
   const finishBtn = (
     <button
       onClick={() => setShowComplete(true)}
-      className="w-full py-4 bg-white/5 border border-orange-500/30 hover:bg-orange-500/10 text-orange-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+      className="w-full py-4 bg-overlay/5 border border-primary/30 hover:bg-primary/10 text-primary font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
     >
       <CheckCircle2 size={18} />
       Finish Workout
@@ -336,24 +336,15 @@ export default function StartWorkout() {
     <div ref={pageRef} className="max-w-5xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
 
       {/* Header */}
-      <div className="gsap-row flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
-          >
-            <ChevronLeft size={18} className="text-gray-400" />
-          </button>
-          <h1 className="text-lg sm:text-xl font-black text-white">Start Workout</h1>
-        </div>
+      <div className="gsap-row flex items-center justify-end">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-white/5 border border-white/10 rounded-full px-3 sm:px-4 py-2">
-            <Flame size={14} className="text-orange-500" />
-            <span className="text-xs sm:text-sm font-bold text-gray-300">~{Math.round(totalElapsed / 10)} kcal</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-overlay/5 border border-border/10 rounded-full px-3 sm:px-4 py-2">
+            <Flame size={14} className="text-primary" />
+            <span className="text-xs sm:text-sm font-bold text-foreground/80">~{Math.round(totalElapsed / 10)} kcal</span>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-white/5 border border-white/10 rounded-full px-3 sm:px-4 py-2">
-            <Clock size={14} className="text-gray-400" />
-            <span className="text-xs sm:text-sm font-bold text-gray-300">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-overlay/5 border border-border/10 rounded-full px-3 sm:px-4 py-2">
+            <Clock size={14} className="text-muted" />
+            <span className="text-xs sm:text-sm font-bold text-foreground/80">
               {String(Math.floor(totalElapsed / 60)).padStart(2, "0")}:{String(totalElapsed % 60).padStart(2, "0")}
             </span>
           </div>
@@ -362,13 +353,13 @@ export default function StartWorkout() {
 
       {/* Progress */}
       <div className="gsap-row space-y-1">
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-muted">
           <span>{completedExercises.length} of {totalExercises} exercises done</span>
           <span>{overallProgress}% complete</span>
         </div>
-        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2 bg-overlay/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-primary to-blue-700 rounded-full transition-all duration-500"
             style={{ width: `${overallProgress}%` }}
           />
         </div>

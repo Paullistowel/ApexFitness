@@ -88,30 +88,30 @@ export default function OnboardingModal({ onClose }) {
         onClick={onClose}
       >
         <motion.div
-          className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#1a0f08] shadow-2xl shadow-black/60 overflow-hidden"
+          className="relative w-full max-w-lg rounded-3xl border border-border/10 bg-surface shadow-2xl shadow-black/60 overflow-hidden"
           initial={{ opacity: 0, scale: 0.92, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 24 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-orange-700" />
+          <div className="h-1 w-full bg-gradient-to-r from-primary to-blue-700" />
 
           <div className="px-8 py-8 sm:px-10">
             {/* Header */}
             <div className="mb-7 flex items-start justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-orange-500 mb-1">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
                   Step {step} of 2
                 </p>
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-2xl font-bold text-foreground">
                   {step === 1 ? "Tell Us About You" : "Define Your Goals"}
                 </h2>
-                <p className="mt-1 text-sm text-gray-400">
+                <p className="mt-1 text-sm text-muted">
                   {step === 1 ? "We'll personalize your fitness journey." : "Tailor your workout and diet plans."}
                 </p>
               </div>
-              <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors mt-1">
+              <button onClick={onClose} className="text-muted hover:text-foreground transition-colors mt-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -149,22 +149,22 @@ export default function OnboardingModal({ onClose }) {
                     className="space-y-5"
                   >
                     <div>
-                      <p className="mb-3 text-sm font-semibold text-gray-300">Goal Type</p>
+                      <p className="mb-3 text-sm font-semibold text-foreground/80">Goal Type</p>
                       <div className="grid grid-cols-3 gap-3">
                         {goals.map((goal) => (
                           <button key={goal.title} type="button"
                             onClick={() => setSelectedGoal(goal.title)}
                             className={`group relative overflow-hidden rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
                               selectedGoal === goal.title
-                                ? "border-orange-500 ring-1 ring-orange-500/40"
-                                : "border-white/10 hover:border-white/20"
+                                ? "border-primary ring-1 ring-primary/40"
+                                : "border-border/10 hover:border-border/20"
                             }`}
                           >
                             <img src={goal.image} alt={goal.title}
                               className="h-20 w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                             <span className={`absolute inset-x-0 bottom-1.5 text-center text-xs font-bold transition-colors ${
-                              selectedGoal === goal.title ? "text-orange-400" : "text-white"
+                              selectedGoal === goal.title ? "text-primary" : "text-foreground"
                             }`}>
                               {goal.title}
                             </span>
@@ -196,14 +196,14 @@ export default function OnboardingModal({ onClose }) {
                 {step === 2 && (
                   <button type="button"
                     onClick={() => { setErrors({}); setDirection(-1); setStep(1); }}
-                    className="h-11 px-5 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm font-medium transition-all hover:bg-white/5"
+                    className="h-11 px-5 rounded-xl border border-border/10 text-muted hover:text-foreground text-sm font-medium transition-all hover:bg-overlay/5"
                   >
                     Back
                   </button>
                 )}
                 <button type="button"
                   onClick={step === 1 ? goNext : goFinish}
-                  className="h-11 px-7 rounded-xl bg-gradient-to-r from-orange-500 to-orange-700 hover:from-orange-600 hover:to-orange-800 text-white font-bold text-sm shadow-lg hover:shadow-orange-500/30 transition-all"
+                  className="h-11 px-7 rounded-xl bg-gradient-to-r from-primary to-blue-700 hover:from-primary hover:to-blue-700 text-foreground font-bold text-sm shadow-lg hover:shadow-primary/30 transition-all"
                 >
                   {step === 1 ? "Continue →" : "Finish →"}
                 </button>

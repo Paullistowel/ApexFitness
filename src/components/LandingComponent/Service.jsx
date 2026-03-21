@@ -59,7 +59,7 @@ const Services = () => {
   ];
 
   return (
-    <section id="programs" className="py-20 lg:py-32 bg-[#1a0f08]">
+    <section id="programs" className="py-20 lg:py-32 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
@@ -69,13 +69,13 @@ const Services = () => {
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <span className="text-orange-500 font-semibold text-sm uppercase tracking-wider">
+          <span className="text-primary font-semibold text-sm uppercase tracking-wider">
             Our Services
           </span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mt-3">
-            Training <span className="text-orange-500">Programs</span>
+          <h2 className="text-4xl lg:text-5xl font-bold text-foreground mt-3">
+            Training <span className="text-primary">Programs</span>
           </h2>
-          <p className="text-gray-400 text-lg mt-4 max-w-2xl mx-auto">
+          <p className="text-muted text-lg mt-4 max-w-2xl mx-auto">
             Choose from our variety of specialized programs designed to help you
             achieve your specific fitness goals.
           </p>
@@ -86,7 +86,7 @@ const Services = () => {
           {programs.map((program, index) => (
             <motion.div
               key={index}
-              className="group relative overflow-hidden rounded-2xl bg-white/5 border border-white/5 hover:border-orange-500/30 transition-all duration-300"
+              className="group relative overflow-hidden rounded-2xl bg-overlay/5 border border-border/5 hover:border-primary/30 transition-all duration-300"
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
@@ -113,21 +113,21 @@ const Services = () => {
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-orange-500 transition-colors">
+                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
                       {program.title}
                     </h3>
-                    <p className="text-gray-400 text-sm leading-relaxed">
+                    <p className="text-muted text-sm leading-relaxed">
                       {program.description}
                     </p>
                   </div>
-                  <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center flex-shrink-0 ml-4 group-hover:bg-orange-500 transition-colors">
-                    <ArrowUpRight className="w-5 h-5 text-orange-500 group-hover:text-white transition-colors" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 ml-4 group-hover:bg-primary transition-colors">
+                    <ArrowUpRight className="w-5 h-5 text-primary group-hover:text-foreground transition-colors" />
                   </div>
                 </div>
               </div>
 
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-orange-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             </motion.div>
           ))}
         </div>

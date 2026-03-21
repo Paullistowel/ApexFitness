@@ -5,43 +5,100 @@
 @tailwind components;
 @tailwind utilities;
 
-/* started editing*/
+/* ═══════════════════════════════════════════════════════════════════
+   APEX FITNESS — THEME TOKENS
+   Usage in Tailwind:  bg-background · bg-surface · bg-elevated
+                       text-foreground · text-muted · text-subtle
+                       border-border/10  (opacity modifier still works)
+                       bg-overlay/5      (white in dark, black in light)
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* Shadcn CSS variables — mapped to the project's color palette.
-   Keeps shadcn components (Select, etc.) working without touching
-   the existing Tailwind color classes used throughout the project. */
+/* ── LIGHT MODE (default) ─────────────────────────────────────── */
 :root {
-  /* Dropdown / popover background → project dark */
-  --popover:            26 15 8;        /* #1a0f08 in RGB */
-  --popover-foreground: 255 255 255;
+  /* Page & surface backgrounds */
+  --background:   241 245 252;   /* #f1f5fc cool blue-tinted white  */
+  --surface:      255 255 255;   /* #ffffff card / panel            */
+  --elevated:     224 233 248;   /* #e0e9f8 blue-tinted elevated    */
 
-  /* Input border & focus ring */
-  --input:  255 255 255 / 0.10;        /* white/10 */
-  --ring:   249 115 22;                /* orange-500 #f97316 */
-  --border: 255 255 255 / 0.10;
+  /* Overlay for subtle hover/tint effects (use with opacity)
+     e.g. bg-overlay/5 = black/5 in light, white/5 in dark         */
+  --overlay:       0   0   0;
 
-  /* Hover state inside dropdown */
-  --accent:            255 255 255 / 0.07;
-  --accent-foreground: 255 255 255;
+  /* Text */
+  --foreground:   17  24  39;    /* gray-900  primary text          */
+  --muted:        107 114 128;   /* gray-500  secondary text        */
+  --subtle:       156 163 175;   /* gray-400  placeholder / hint    */
 
-  /* Placeholder / chevron / muted text */
-  --muted-foreground: 156 163 175;     /* gray-400 */
+  /* Border base — pair with opacity: border-border/10             */
+  --border:        0   0   0;
 
-  /* Error / destructive */
-  --destructive: 239 68 68;            /* red-500 */
+  /* Primary brand colour — used for buttons, active states, accents */
+  --primary:            59  130 246;   /* blue-500 #3b82f6            */
+  --primary-foreground: 255 255 255;   /* white text on primary bg    */
 
-  /* Border radius used by shadcn triggers */
-  --radius: 0.75rem;                   /* rounded-xl */
+  /* ── Shadcn component tokens (Select, etc.) ── */
+  --popover:            255 255 255;
+  --popover-foreground: 17  24  39;
+  --input:              0   0   0;
+  --ring:               59  130 246;   /* blue-500 */
+  --accent:             0   0   0;
+  --accent-foreground:  17  24  39;
+  --muted-foreground:   107 114 128;
+  --destructive:        239 68  68;
+  --radius:             0.75rem;
 
-  /* ── Dashboard sidebar (light white theme, orange accents) ── */
-  --sidebar:                   255 255 255;   /* white */
-  --sidebar-foreground:        17 24 39;      /* gray-900 */
-  --sidebar-primary:           249 115 22;    /* orange-500 */
+  /* ── Sidebar ── */
+  --sidebar:                    255 255 255;
+  --sidebar-foreground:         17  24  39;
+  --sidebar-primary:            59  130 246;   /* blue-500 */
   --sidebar-primary-foreground: 255 255 255;
-  --sidebar-accent:            255 247 237;   /* orange-50 */
-  --sidebar-accent-foreground: 234 88 12;     /* orange-600 */
-  --sidebar-border:            243 244 246;   /* gray-100 */
-  --sidebar-ring:              249 115 22;    /* orange-500 */
+  --sidebar-accent:             239 246 255;   /* blue-50  */
+  --sidebar-accent-foreground:  29  78  216;   /* blue-700 */
+  --sidebar-border:             243 244 246;
+  --sidebar-ring:               59  130 246;   /* blue-500 */
+}
+
+/* ── DARK MODE ─────────────────────────────────────────────────── */
+.dark {
+  /* Page & surface backgrounds */
+  --background:   6   10  20;   /* #060a14 deep dark blue-black     */
+  --surface:      10  16  30;   /* #0a101e dark blue card / panel   */
+  --elevated:     15  22  40;   /* #0f1628 slightly lighter blue    */
+
+  /* Overlay — white in dark mode for bg-overlay/5 = white/5       */
+  --overlay:      255 255 255;
+
+  /* Text */
+  --foreground:   255 255 255;  /* white    primary text            */
+  --muted:        156 163 175;  /* gray-400 secondary text          */
+  --subtle:        75  85  99;  /* gray-600 placeholder / hint      */
+
+  /* Border base */
+  --border:       255 255 255;
+
+  /* Primary brand colour */
+  --primary:            59  130 246;   /* blue-500 #3b82f6            */
+  --primary-foreground: 255 255 255;   /* white text on primary bg    */
+
+  /* ── Shadcn component tokens ── */
+  --popover:            10  16  30;
+  --popover-foreground: 255 255 255;
+  --input:              255 255 255;
+  --ring:               59  130 246;   /* blue-500 */
+  --accent:             255 255 255;
+  --accent-foreground:  255 255 255;
+  --muted-foreground:   156 163 175;
+  --destructive:        239 68  68;
+
+  /* ── Sidebar ── */
+  --sidebar:                    255 255 255;
+  --sidebar-foreground:         17  24  39;
+  --sidebar-primary:            59  130 246;   /* blue-500 */
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent:             239 246 255;   /* blue-50  */
+  --sidebar-accent-foreground:  29  78  216;   /* blue-700 */
+  --sidebar-border:             243 244 246;
+  --sidebar-ring:               59  130 246;   /* blue-500 */
 }
 
 /* Hide scrollbar globally while keeping scroll functionality */
