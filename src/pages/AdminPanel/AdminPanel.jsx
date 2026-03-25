@@ -1,10 +1,23 @@
 import { useState, useRef } from "react";
 import {
   Users, Dumbbell, Search, MoreVertical, Ban, CheckCircle2,
-  Trash2, Plus, Pencil, X, Check, Shield, Crown,
-  Zap, Leaf, Heart, ImagePlus, Upload,
+  Trash2, Plus, Pencil, X, Shield, Crown,
+  Zap, Leaf, Heart, ImagePlus, Upload, Bell, Send, CheckCheck,
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../lib/api";
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function initials(name) {
+  return (name || "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+function formatJoined(dateStr) {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+const COLORS = ["#f97316","#3b82f6","#a855f7","#22c55e","#ef4444","#eab308","#06b6d4","#ec4899"];
+function avatarColor(name) { return COLORS[(name || "").charCodeAt(0) % COLORS.length]; }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 function Badge({ label, color }) {
   const colors = {
     green:  "bg-green-500/15 text-green-400 border border-green-500/20",
@@ -15,19 +28,15 @@ function Badge({ label, color }) {
     yellow: "bg-yellow-500/15 text-yellow-400 border border-yellow-500/20",
     purple: "bg-purple-500/15 text-purple-400 border border-purple-500/20",
   };
-  return (
-    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${colors[color] || colors.gray}`}>
-      {label}
-    </span>
-  );
+  return <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${colors[color] || colors.gray}`}>{label}</span>;
 }
 
-function Avatar({ initials, color = "#f97316", size = "md" }) {
-  const sizes = { sm: "w-8 h-8 text-xs", md: "w-10 h-10 text-sm", lg: "w-12 h-12 text-base" };
+function Avatar({ name, size = "md" }) {
+  const sizes = { sm: "w-8 h-8 text-xs", md: "w-10 h-10 text-sm" };
   return (
     <div className={`${sizes[size]} rounded-full flex items-center justify-center font-black text-foreground shrink-0`}
-      style={{ backgroundColor: color }}>
-      {initials}
+      style={{ backgroundColor: avatarColor(name) }}>
+      {initials(name)}
     </div>
   );
 }
@@ -49,7 +58,7 @@ function ConfirmModal({ title, message, onConfirm, onClose, danger = true }) {
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 border border-border/10 rounded-2xl text-sm font-semibold text-muted hover:bg-overlay/5 transition-colors">Cancel</button>
           <button onClick={() => { onConfirm(); onClose(); }}
-            className={`flex-1 py-3 rounded-2xl text-sm font-bold text-foreground transition-colors ${danger ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary"}`}>
+            className={`flex-1 py-3 rounded-2xl text-sm font-bold text-foreground transition-colors ${danger ? "bg-red-500 hover:bg-red-600" : "bg-primary"}`}>
             Confirm
           </button>
         </div>
@@ -58,44 +67,35 @@ function ConfirmModal({ title, message, onConfirm, onClose, danger = true }) {
   );
 }
 
-const initialUsers = [
-  { id: 1, name: "Emmanuel Acquah", email: "emma@gmail.com",   role: "user",    plan: "Pro",   status: "active",    joined: "Jan 2026",  goal: "Weight Loss",   initials: "EA", color: "#f97316" },
-  { id: 2, name: "Akua Mensah",     email: "akua@gmail.com",   role: "user",    plan: "Free",  status: "active",    joined: "Feb 2026",  goal: "Muscle Gain",   initials: "AM", color: "#3b82f6" },
-  { id: 3, name: "Kofi Acheampong", email: "kofi@gmail.com",   role: "user",    plan: "Pro",   status: "suspended", joined: "Jan 2026",  goal: "Maintain",      initials: "KA", color: "#a855f7" },
-  { id: 4, name: "Ama Darko",       email: "ama@gmail.com",    role: "user",    plan: "Free",  status: "active",    joined: "Mar 2026",  goal: "Weight Loss",   initials: "AD", color: "#22c55e" },
-  { id: 5, name: "Kwame Boateng",   email: "kwame@gmail.com",  role: "user",    plan: "Pro",   status: "active",    joined: "Feb 2026",  goal: "Muscle Gain",   initials: "KB", color: "#ef4444" },
-  { id: 6, name: "Emefa Agbeko",    email: "emefa@gmail.com",  role: "user",    plan: "Pro",   status: "active",    joined: "Dec 2025",  goal: "Maintain",      initials: "EF", color: "#eab308" },
-];
-
+// ─── Users Tab ────────────────────────────────────────────────────────────────
 function UserRow({ user, onBan, onActivate, onDelete, onChangeRole }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const statusColor = { active: "green", suspended: "red", banned: "gray" };
-  const planColor   = { Pro: "orange", Free: "blue" };
+  const planColor   = { pro: "orange", free: "blue" };
   const roleColor   = { user: "gray", admin: "orange" };
 
   return (
     <tr className="border-b border-border/10 hover:bg-overlay/5 transition-colors">
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
-          <Avatar initials={user.initials} color={user.color} size="sm" />
+          <Avatar name={user.name} size="sm" />
           <div>
             <p className="text-sm font-bold text-foreground">{user.name}</p>
             <p className="text-xs text-muted">{user.email}</p>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3.5"><Badge label={user.role} color={roleColor[user.role]} /></td>
-      <td className="px-4 py-3.5"><Badge label={user.plan} color={planColor[user.plan]} /></td>
-      <td className="px-4 py-3.5"><Badge label={user.status} color={statusColor[user.status]} /></td>
-      <td className="px-4 py-3.5 text-xs text-muted">{user.joined}</td>
-      <td className="px-4 py-3.5 text-xs text-muted">{user.goal}</td>
+      <td className="px-4 py-3.5"><Badge label={user.role}   color={roleColor[user.role]            ?? "gray"}  /></td>
+      <td className="px-4 py-3.5"><Badge label={user.plan}   color={planColor[user.plan]            ?? "gray"}  /></td>
+      <td className="px-4 py-3.5"><Badge label={user.status} color={statusColor[user.status]        ?? "gray"}  /></td>
+      <td className="px-4 py-3.5 text-xs text-muted">{formatJoined(user.created_at)}</td>
       <td className="px-4 py-3.5 relative">
         <button onClick={() => setMenuOpen((p) => !p)}
           className="w-8 h-8 rounded-full hover:bg-overlay/10 flex items-center justify-center transition-colors">
           <MoreVertical size={15} className="text-muted" />
         </button>
         {menuOpen && (
-          <div className="absolute right-4 top-10 bg-elevated border border-border/10 rounded-2xl shadow-xl z-20 py-1 min-w-[160px]">
+          <div className="absolute right-4 bottom-10 bg-elevated border border-border/10 rounded-2xl shadow-xl z-20 py-1 min-w-[160px]">
             {user.status === "active"
               ? <button onClick={() => { onBan(user.id); setMenuOpen(false); }}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors">
@@ -106,9 +106,9 @@ function UserRow({ user, onBan, onActivate, onDelete, onChangeRole }) {
                   <CheckCircle2 size={13} /> Activate User
                 </button>
             }
-            <button onClick={() => { onChangeRole(user.id); setMenuOpen(false); }}
+            <button onClick={() => { onChangeRole(user.id, user.role); setMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-foreground/80 hover:bg-overlay/5 transition-colors">
-              <UserCheck size={13} /> Change Role
+              <Shield size={13} /> {user.role === "admin" ? "Remove Admin" : "Make Admin"}
             </button>
             <button onClick={() => { onDelete(user.id); setMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors">
@@ -122,25 +122,39 @@ function UserRow({ user, onBan, onActivate, onDelete, onChangeRole }) {
 }
 
 function UsersTab() {
-  const [users, setUsers]   = useState(initialUsers);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [confirm, setConfirm] = useState(null);
 
-  const ban      = (id) => setUsers((p) => p.map((u) => u.id === id ? { ...u, status: "suspended" } : u));
-  const activate = (id) => setUsers((p) => p.map((u) => u.id === id ? { ...u, status: "active" }    : u));
-  const remove   = (id) => setUsers((p) => p.filter((u) => u.id !== id));
-  const changeRole = (id) => setUsers((p) => p.map((u) => u.id === id ? { ...u, role: u.role === "admin" ? "user" : "admin" } : u));
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ["admin-users", search, filter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (filter !== "all") params.set("filter", filter);
+      return api.get(`/admin/users?${params}`).then((r) => r.data);
+    },
+  });
 
-  const filtered = users.filter((u) => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "all" ? true : filter === "pro" ? u.plan === "Pro" : filter === "suspended" ? u.status === "suspended" : filter === "admin" ? u.role === "admin" : true;
-    return matchSearch && matchFilter;
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => api.put(`/admin/users/${id}/status`, { status }),
+    onSuccess: invalidate,
+  });
+  const roleMutation = useMutation({
+    mutationFn: ({ id, role }) => api.put(`/admin/users/${id}/role`, { role }),
+    onSuccess: invalidate,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/admin/users/${id}`),
+    onSuccess: invalidate,
   });
 
   const stats = [
-    { label: "Total Users", value: users.length, color: "#f97316" },
-    { label: "Pro Members", value: users.filter((u) => u.plan === "Pro").length, color: "#22c55e" },
+    { label: "Total Users", value: users.length,                                    color: "#f97316" },
+    { label: "Pro Members", value: users.filter((u) => u.plan === "pro").length,    color: "#22c55e" },
     { label: "Suspended",   value: users.filter((u) => u.status === "suspended").length, color: "#ef4444" },
   ];
 
@@ -159,13 +173,14 @@ function UsersTab() {
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-3">
+
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users..."
-            className="w-full pl-9 pr-4 py-2.5 bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all" />
+            className="w-full pl-9 pr-4 py-2.5 bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
         </div>
-        <div className="flex gap-12 border-b border-border/10">
+        <div className="flex gap-6 border-b border-border/10">
           {["all", "pro", "admin", "suspended"].map((f) => (
             <button key={f} onClick={() => setFilter(f)}
               className={`pb-2 text-sm font-semibold border-b-2 -mb-px transition-all capitalize ${filter === f ? "text-primary border-primary" : "text-muted border-transparent hover:text-foreground/80"}`}>
@@ -174,86 +189,83 @@ function UsersTab() {
           ))}
         </div>
       </div>
+
       <div className="bg-overlay/5 border border-border/10 rounded-2xl overflow-hidden overflow-x-auto">
         <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-border/10 bg-overlay/5">
-              {["User", "Role", "Plan", "Status", "Joined", "Goal", "Actions"].map((h) => (
+              {["User", "Role", "Plan", "Status", "Joined", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-black text-muted uppercase tracking-wider first:px-5">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
+            {isLoading ? (
+              <tr><td colSpan={6} className="py-12 text-center">
+                <div className="flex justify-center"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+              </td></tr>
+            ) : users.length === 0 ? (
+              <tr><td colSpan={6} className="py-12 text-center text-sm text-muted">No users found</td></tr>
+            ) : users.map((u) => (
               <UserRow key={u.id} user={u}
-                onBan={(id) => setConfirm({ action: () => ban(id), title: "Suspend User", message: "This user will lose access.", danger: true })}
-                onActivate={activate}
-                onDelete={(id) => setConfirm({ action: () => remove(id), title: "Delete User", message: "This action cannot be undone.", danger: true })}
-                onChangeRole={changeRole}
+                onBan={(id) => setConfirm({ onConfirm: () => statusMutation.mutate({ id, status: "suspended" }), title: "Suspend User", message: "This user will lose access.", danger: true })}
+                onActivate={(id) => statusMutation.mutate({ id, status: "active" })}
+                onDelete={(id) => setConfirm({ onConfirm: () => deleteMutation.mutate(id), title: "Delete User", message: "This action cannot be undone.", danger: true })}
+                onChangeRole={(id, role) => roleMutation.mutate({ id, role: role === "admin" ? "user" : "admin" })}
               />
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center py-12 gap-2">
-            <Users size={24} className="text-subtle" />
-            <p className="text-sm text-muted">No users found</p>
-          </div>
-        )}
       </div>
       {confirm && <ConfirmModal {...confirm} onClose={() => setConfirm(null)} />}
     </div>
   );
 }
 
+// ─── Exercise Tab ─────────────────────────────────────────────────────────────
 const categoryConfig = {
-  Cardio:   { icon: Heart,    color: "#ef4444", bg: "bg-red-500/15"    },
-  Strength: { icon: Dumbbell, color: "#f97316", bg: "bg-primary/15" },
-  HIIT:     { icon: Zap,      color: "#eab308", bg: "bg-yellow-500/15" },
-  Yoga:     { icon: Leaf,     color: "#22c55e", bg: "bg-green-500/15"  },
+  Strength:    { icon: Dumbbell, color: "#f97316", bg: "bg-primary/15"    },
+  Cardio:      { icon: Heart,    color: "#ef4444", bg: "bg-red-500/15"    },
+  HIIT:        { icon: Zap,      color: "#eab308", bg: "bg-yellow-500/15" },
+  Flexibility: { icon: Leaf,     color: "#22c55e", bg: "bg-green-500/15"  },
 };
-
-const initialExercises = [
-  { id: 1, name: "Treadmill Run",    category: "Cardio",   level: "Beginner",     duration: "30 min", status: "active" },
-  { id: 2, name: "Barbell Squat",    category: "Strength", level: "Beginner",     duration: "30 min", status: "active" },
-  { id: 3, name: "Burpees",          category: "HIIT",     level: "Beginner",     duration: "30 min", status: "active" },
-  { id: 4, name: "Sun Salutation",   category: "Yoga",     level: "Beginner",     duration: "30 min", status: "active" },
-  { id: 5, name: "Box Jump",         category: "HIIT",     level: "Intermediate", duration: "30 min", status: "active" },
-  { id: 6, name: "Bench Press",      category: "Strength", level: "Intermediate", duration: "35 min", status: "active" },
-  { id: 7, name: "Cycling Sprint",   category: "Cardio",   level: "Intermediate", duration: "45 min", status: "active" },
-  { id: 8, name: "Warrior Sequence", category: "Yoga",     level: "Beginner",     duration: "25 min", status: "active" },
-];
 
 function ExerciseModal({ exercise, onSave, onClose }) {
   const [form, setForm] = useState(
-    exercise || { name: "", category: "Cardio", level: "Beginner", duration: "30 min", status: "active", img: "" }
+    exercise
+      ? { name: exercise.name, category: exercise.category, difficulty: exercise.difficulty, duration_mins: exercise.duration_mins ?? 30, duration_secs: exercise.duration_secs ?? 45, img_url: exercise.img_url ?? "" }
+      : { name: "", category: "Strength", difficulty: "beginner", duration_mins: 30, duration_secs: 45, img_url: "" }
   );
-  const [dragOver, setDragOver] = useState(false);
+  const [dragOver,    setDragOver]    = useState(false);
+  const [preview,     setPreview]     = useState(exercise?.img_url ? `${import.meta.env.VITE_BACKEND_URL}${exercise.img_url}` : "");
+  const [uploading,   setUploading]   = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const fileRef = useRef(null);
-
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-  const readFile = (file) => {
+  const uploadFile = async (file) => {
     if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => set("img", e.target.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileChange = (e) => readFile(e.target.files[0]);
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    readFile(e.dataTransfer.files[0]);
+    setUploading(true);
+    setUploadError("");
+    const data = new FormData();
+    data.append("image", file);
+    try {
+      const res = await api.post("/admin/upload", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      set("img_url", res.data.url);
+      setPreview(`${import.meta.env.VITE_BACKEND_URL}${res.data.url}`);
+    } catch {
+      setUploadError("Upload failed. Try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-elevated border border-border/10 rounded-3xl p-6 w-full max-w-md shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto">
-
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="text-base font-black text-foreground">{exercise ? "Edit Exercise" : "Add Exercise"}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-overlay/10 flex items-center justify-center hover:bg-overlay/20 transition-colors">
@@ -265,106 +277,89 @@ function ExerciseModal({ exercise, onSave, onClose }) {
         <div>
           <label className="text-xs font-bold text-muted uppercase tracking-wider">Exercise Image</label>
           <div className="mt-1.5">
-            {form.img ? (
-              /* Preview */
+            {preview ? (
               <div className="relative rounded-2xl overflow-hidden border border-border/10 group">
-                <img src={form.img} alt="preview" className="w-full h-44 object-cover" />
+                <img src={preview} alt="preview" className="w-full h-44 object-cover" />
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current.click()}
-                    className="flex items-center gap-1.5 bg-overlay/10 hover:bg-overlay/20 border border-border/20 text-foreground text-xs font-bold px-3 py-2 rounded-xl transition-colors backdrop-blur-sm"
-                  >
+                  <button type="button" onClick={() => fileRef.current.click()}
+                    className="flex items-center gap-1.5 bg-overlay/10 border border-border/20 text-foreground text-xs font-bold px-3 py-2 rounded-xl backdrop-blur-sm">
                     <Upload size={12} /> Change
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => set("img", "")}
-                    className="flex items-center gap-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-2 rounded-xl transition-colors backdrop-blur-sm"
-                  >
+                  <button type="button" onClick={() => { setPreview(""); set("img_url", ""); }}
+                    className="flex items-center gap-1.5 bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-2 rounded-xl backdrop-blur-sm">
                     <X size={12} /> Remove
                   </button>
                 </div>
               </div>
             ) : (
-              /* Drop zone */
-              <button
-                type="button"
-                onClick={() => fileRef.current.click()}
+              <button type="button" onClick={() => fileRef.current.click()}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                className={`w-full h-36 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${
-                  dragOver
-                    ? "border-primary/60 bg-primary/10"
-                    : "border-border/10 bg-overlay/5 hover:border-primary/30 hover:bg-primary/5"
-                }`}
-              >
+                onDrop={(e) => { e.preventDefault(); setDragOver(false); uploadFile(e.dataTransfer.files[0]); }}
+                disabled={uploading}
+                className={`w-full h-36 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${dragOver ? "border-primary/60 bg-primary/10" : "border-border/10 bg-overlay/5 hover:border-primary/30"}`}>
                 <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <ImagePlus size={18} className="text-primary" />
+                  {uploading
+                    ? <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    : <ImagePlus size={18} className="text-primary" />
+                  }
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-foreground/80">Click or drag & drop to upload</p>
-                  <p className="text-[10px] text-subtle mt-0.5">PNG, JPG, WEBP — max 5MB</p>
-                </div>
+                <p className="text-xs font-bold text-foreground/80">{uploading ? "Uploading…" : "Click or drag & drop"}</p>
               </button>
             )}
-            {/* Hidden file input */}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => uploadFile(e.target.files[0])} />
+            {uploadError && <p className="text-xs text-red-400 mt-1">{uploadError}</p>}
           </div>
         </div>
 
-        {/* Name & Duration */}
-        {[
-          { key: "name",     label: "Exercise Name", placeholder: "e.g. Pull-ups"  },
-          { key: "duration", label: "Duration",       placeholder: "e.g. 30 min"    },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key}>
-            <label className="text-xs font-bold text-muted uppercase tracking-wider">{label}</label>
-            <input
-              type="text"
-              value={form[key]}
-              onChange={(e) => set(key, e.target.value)}
-              placeholder={placeholder}
-              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
-            />
-          </div>
-        ))}
+        {/* Name */}
+        <div>
+          <label className="text-xs font-bold text-muted uppercase tracking-wider">Exercise Name</label>
+          <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Pull-ups"
+            className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+        </div>
 
-        {/* Category & Level */}
+        {/* Duration fields */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-bold text-muted uppercase tracking-wider">Session Duration (mins)</label>
+            <input type="number" min={1} value={form.duration_mins} onChange={(e) => set("duration_mins", Number(e.target.value))}
+              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted uppercase tracking-wider">Timer per Set (secs)</label>
+            <input type="number" min={5} max={300} value={form.duration_secs} onChange={(e) => set("duration_secs", Number(e.target.value))}
+              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+          </div>
+        </div>
+
+        {/* Category & Difficulty */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-bold text-muted uppercase tracking-wider">Category</label>
             <select value={form.category} onChange={(e) => set("category", e.target.value)}
-              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all">
+              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
               {Object.keys(categoryConfig).map((c) => <option key={c} className="bg-elevated">{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-bold text-muted uppercase tracking-wider">Level</label>
-            <select value={form.level} onChange={(e) => set("level", e.target.value)}
-              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all">
-              {["Beginner", "Intermediate", "Advanced"].map((l) => <option key={l} className="bg-elevated">{l}</option>)}
+            <label className="text-xs font-bold text-muted uppercase tracking-wider">Difficulty</label>
+            <select value={form.difficulty} onChange={(e) => set("difficulty", e.target.value)}
+              className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
+              {["beginner", "intermediate", "advanced"].map((l) => <option key={l} className="bg-elevated capitalize">{l}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3 pt-1">
-          <button onClick={onClose} className="flex-1 py-3 border border-border/10 rounded-2xl text-sm font-semibold text-muted hover:bg-overlay/5 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={() => { onSave(form); onClose(); }}
-            disabled={!form.name.trim()}
-            className="flex-1 py-3 bg-primary hover:bg-primary disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl text-sm font-bold text-foreground transition-colors"
-          >
+          <button onClick={onClose} className="flex-1 py-3 border border-border/10 rounded-2xl text-sm font-semibold text-muted hover:bg-overlay/5 transition-colors">Cancel</button>
+          <button onClick={() => { onSave(form); onClose(); }} disabled={!form.name.trim() || uploading}
+            className="flex-1 py-3 bg-primary disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl text-sm font-bold text-foreground transition-colors">
             {exercise ? "Save Changes" : "Add Exercise"}
           </button>
         </div>
@@ -374,31 +369,52 @@ function ExerciseModal({ exercise, onSave, onClose }) {
 }
 
 function ContentTab() {
-  const [exercises, setExercises] = useState(initialExercises);
-  const [search, setSearch] = useState("");
+  const queryClient = useQueryClient();
+  const [search, setSearch]   = useState("");
   const [catFilter, setCatFilter] = useState("All");
-  const [modal, setModal] = useState(null);
+  const [modal, setModal]     = useState(null);
 
-  const saveExercise = (form) => {
-    if (modal === "add") setExercises((p) => [...p, { ...form, id: Date.now() }]);
-    else setExercises((p) => p.map((e) => e.id === form.id ? form : e));
-  };
-  const remove = (id) => setExercises((p) => p.filter((e) => e.id !== id));
-  const toggleStatus = (id) => setExercises((p) => p.map((e) => e.id === id ? { ...e, status: e.status === "active" ? "inactive" : "active" } : e));
-
-  const filtered = exercises.filter((e) => {
-    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat    = catFilter === "All" || e.category === catFilter;
-    return matchSearch && matchCat;
+  const { data: exercises = [], isLoading } = useQuery({
+    queryKey: ["admin-exercises", search, catFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (catFilter !== "All") params.set("category", catFilter);
+      return api.get(`/admin/exercises?${params}`).then((r) => r.data);
+    },
   });
 
-  const levelColor = { Beginner: "green", Intermediate: "yellow", Advanced: "red" };
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-exercises"] });
+
+  const createMutation = useMutation({
+    mutationFn: (form) => api.post("/admin/exercises", form),
+    onSuccess: invalidate,
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, ...form }) => api.put(`/admin/exercises/${id}`, form),
+    onSuccess: invalidate,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/admin/exercises/${id}`),
+    onSuccess: invalidate,
+  });
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => api.put(`/admin/exercises/${id}/status`, { status }),
+    onSuccess: invalidate,
+  });
+
+  const saveExercise = (form) => {
+    if (modal === "add") createMutation.mutate(form);
+    else updateMutation.mutate({ id: modal.id, ...form });
+  };
+
+  const levelColor = { beginner: "green", intermediate: "yellow", advanced: "red" };
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-4 gap-4">
         {Object.entries(categoryConfig).map(([cat, cfg]) => {
-          const Icon = cfg.icon;
+          const Icon  = cfg.icon;
           const count = exercises.filter((e) => e.category === cat).length;
           return (
             <div key={cat} className="bg-overlay/5 border border-border/10 rounded-2xl p-4 flex items-center gap-3">
@@ -410,11 +426,12 @@ function ContentTab() {
           );
         })}
       </div>
-      <div className="flex items-center gap-3">
+
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search exercises..."
-            className="w-full pl-9 pr-4 py-2.5 bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all" />
+            className="w-full pl-9 pr-4 py-2.5 bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
         </div>
         <div className="flex gap-5 border-b border-border/10">
           {["All", ...Object.keys(categoryConfig)].map((c) => (
@@ -424,42 +441,51 @@ function ContentTab() {
             </button>
           ))}
         </div>
-        <button onClick={() => setModal("add")} className="flex items-center gap-2 bg-primary hover:bg-primary text-foreground text-sm font-bold px-4 py-2.5 rounded-xl transition-colors ml-auto shrink-0">
+        <button onClick={() => setModal("add")} className="flex items-center gap-2 bg-primary text-foreground text-sm font-bold px-4 py-2.5 rounded-xl transition-colors ml-auto shrink-0">
           <Plus size={15} /> Add Exercise
         </button>
       </div>
+
       <div className="bg-overlay/5 border border-border/10 rounded-2xl overflow-hidden overflow-x-auto">
         <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-border/10 bg-overlay/5">
-              {["Exercise", "Category", "Level", "Duration", "Status", "Actions"].map((h) => (
+              {["Exercise", "Category", "Difficulty", "Duration", "Status", "Actions"].map((h) => (
                 <th key={h} className="px-5 py-3 text-left text-xs font-black text-muted uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((ex) => {
+            {isLoading ? (
+              <tr><td colSpan={6} className="py-12 text-center">
+                <div className="flex justify-center"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+              </td></tr>
+            ) : exercises.map((ex) => {
               const cfg  = categoryConfig[ex.category];
               const Icon = cfg?.icon || Dumbbell;
               return (
                 <tr key={ex.id} className="border-b border-border/10 hover:bg-overlay/5 transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      {ex.img
-                        ? <img src={ex.img} alt={ex.name} className="w-8 h-8 rounded-xl object-cover shrink-0" />
+                      {ex.img_url
+                        ? <img src={ex.img_url.startsWith("http") ? ex.img_url : `${import.meta.env.VITE_BACKEND_URL}${ex.img_url}`} alt={ex.name} className="w-8 h-8 rounded-xl object-cover shrink-0" />
                         : <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg?.bg}`}><Icon size={14} style={{ color: cfg?.color }} /></div>
                       }
                       <span className="text-sm font-bold text-foreground">{ex.name}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5"><Badge label={ex.category} color={ex.category === "Cardio" ? "red" : ex.category === "Strength" ? "orange" : ex.category === "HIIT" ? "yellow" : "green"} /></td>
-                  <td className="px-5 py-3.5"><Badge label={ex.level} color={levelColor[ex.level]} /></td>
-                  <td className="px-5 py-3.5 text-xs text-muted">{ex.duration}</td>
-                  <td className="px-5 py-3.5"><button onClick={() => toggleStatus(ex.id)}><Badge label={ex.status} color={ex.status === "active" ? "green" : "gray"} /></button></td>
+                  <td className="px-5 py-3.5"><Badge label={ex.category}   color={ex.category === "Cardio" ? "red" : ex.category === "Strength" ? "orange" : ex.category === "HIIT" ? "yellow" : "green"} /></td>
+                  <td className="px-5 py-3.5"><Badge label={ex.difficulty} color={levelColor[ex.difficulty] ?? "gray"} /></td>
+                  <td className="px-5 py-3.5 text-xs text-muted">{ex.duration_mins ? `${ex.duration_mins} min` : "—"}</td>
+                  <td className="px-5 py-3.5">
+                    <button onClick={() => statusMutation.mutate({ id: ex.id, status: ex.status === "active" ? "inactive" : "active" })}>
+                      <Badge label={ex.status} color={ex.status === "active" ? "green" : "gray"} />
+                    </button>
+                  </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1">
                       <button onClick={() => setModal(ex)} className="w-8 h-8 rounded-full bg-overlay/10 hover:bg-primary/15 flex items-center justify-center transition-colors"><Pencil size={13} className="text-muted" /></button>
-                      <button onClick={() => remove(ex.id)} className="w-8 h-8 rounded-full bg-overlay/10 hover:bg-red-500/15 flex items-center justify-center transition-colors"><Trash2 size={13} className="text-muted" /></button>
+                      <button onClick={() => deleteMutation.mutate(ex.id)} className="w-8 h-8 rounded-full bg-overlay/10 hover:bg-red-500/15 flex items-center justify-center transition-colors"><Trash2 size={13} className="text-muted" /></button>
                     </div>
                   </td>
                 </tr>
@@ -473,9 +499,147 @@ function ContentTab() {
   );
 }
 
+// ─── Notifications Tab ────────────────────────────────────────────────────────
+const NOTIF_TYPES = ["workout", "diet", "water", "achievement", "message", "system"];
+const TYPE_COLORS = {
+  workout:     "text-primary bg-primary/10 border-primary/20",
+  diet:        "text-green-400 bg-green-500/10 border-green-500/20",
+  water:       "text-blue-400 bg-blue-500/10 border-blue-500/20",
+  achievement: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+  message:     "text-purple-400 bg-purple-500/10 border-purple-500/20",
+  system:      "text-muted bg-overlay/10 border-border/10",
+};
+
+function NotificationsTab() {
+  const [form, setForm]       = useState({ title: "", body: "", type: "system", target: "all" });
+  const [sent, setSent]       = useState(null); // { count } after success
+  const [error, setError]     = useState("");
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["admin-users-list"],
+    queryFn: () => api.get("/admin/users").then((r) => r.data),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: (payload) => api.post("/admin/notifications/send", payload),
+    onSuccess: (res) => {
+      setSent(res.data.sent);
+      setError("");
+      setForm({ title: "", body: "", type: "system", target: "all" });
+    },
+    onError: () => setError("Failed to send. Please try again."),
+  });
+
+  const handleSend = () => {
+    if (!form.title.trim() || !form.body.trim()) {
+      setError("Title and message are required.");
+      return;
+    }
+    setSent(null);
+    setError("");
+    sendMutation.mutate(form);
+  };
+
+  return (
+    <div className="max-w-2xl space-y-5">
+      {/* Info strip */}
+      <div className="bg-overlay/5 border border-border/10 rounded-2xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Bell size={18} className="text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-foreground">Send Notification</p>
+          <p className="text-xs text-muted">Broadcast to all users or target a specific one. Appears in their notification bell.</p>
+        </div>
+      </div>
+
+      <div className="bg-overlay/5 border border-border/10 rounded-2xl p-5 space-y-4">
+        {/* Type */}
+        <div>
+          <label className="text-xs font-bold text-muted uppercase tracking-wider">Type</label>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {NOTIF_TYPES.map((t) => (
+              <button key={t} onClick={() => set("type", t)}
+                className={`text-xs font-bold px-3 py-1.5 rounded-full border capitalize transition-all ${
+                  form.type === t ? TYPE_COLORS[t] : "bg-overlay/5 border-border/10 text-muted hover:text-foreground/80"
+                }`}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Target */}
+        <div>
+          <label className="text-xs font-bold text-muted uppercase tracking-wider">Recipient</label>
+          <div className="flex gap-3 mt-2">
+            <button onClick={() => set("target", "all")}
+              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                form.target === "all" ? "bg-primary/10 border-primary/30 text-primary" : "bg-overlay/5 border-border/10 text-muted hover:text-foreground/80"
+              }`}>
+              All Users ({allUsers.length})
+            </button>
+            <button onClick={() => set("target", form.target === "all" ? "" : form.target)}
+              className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                form.target !== "all" ? "bg-primary/10 border-primary/30 text-primary" : "bg-overlay/5 border-border/10 text-muted hover:text-foreground/80"
+              }`}>
+              Specific User
+            </button>
+          </div>
+
+          {form.target !== "all" && (
+            <select value={form.target} onChange={(e) => set("target", e.target.value)}
+              className="mt-2 w-full bg-overlay/5 border border-border/10 text-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
+              <option value="" className="bg-elevated">— Select a user —</option>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id} className="bg-elevated">{u.name} ({u.email})</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* Title */}
+        <div>
+          <label className="text-xs font-bold text-muted uppercase tracking-wider">Title</label>
+          <input value={form.title} onChange={(e) => set("title", e.target.value)}
+            placeholder="e.g. New workout added!"
+            className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all" />
+        </div>
+
+        {/* Message */}
+        <div>
+          <label className="text-xs font-bold text-muted uppercase tracking-wider">Message</label>
+          <textarea value={form.body} onChange={(e) => set("body", e.target.value)} rows={4}
+            placeholder="Write your notification message here…"
+            className="mt-1.5 w-full bg-overlay/5 border border-border/10 text-foreground placeholder:text-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none" />
+        </div>
+
+        {error && <p className="text-xs text-red-400">{error}</p>}
+
+        {sent !== null && (
+          <div className="flex items-center gap-2 text-green-400 text-sm font-semibold">
+            <CheckCheck size={16} /> Sent to {sent} user{sent !== 1 ? "s" : ""}
+          </div>
+        )}
+
+        <button onClick={handleSend} disabled={sendMutation.isPending}
+          className="w-full flex items-center justify-center gap-2 bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-foreground text-sm font-bold py-3 rounded-2xl transition-colors">
+          {sendMutation.isPending
+            ? <div className="w-4 h-4 border-2 border-foreground/40 border-t-foreground rounded-full animate-spin" />
+            : <><Send size={14} /> Send Notification</>
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ──────────────────────────────────────────────────────────────────────
 const tabs = [
   { id: "users",   label: "Users",            icon: Users    },
   { id: "content", label: "Exercise Library", icon: Dumbbell },
+  { id: "notifs",  label: "Notifications",    icon: Bell     },
 ];
 
 export default function AdminPanel() {
@@ -496,11 +660,7 @@ export default function AdminPanel() {
         <div className="flex gap-6 border-b border-border/10">
           {tabs.map((t) => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 -mb-px transition-all ${
-                activeTab === t.id
-                  ? "text-primary border-primary"
-                  : "text-muted border-transparent hover:text-foreground/80"
-              }`}>
+              className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 -mb-px transition-all ${activeTab === t.id ? "text-primary border-primary" : "text-muted border-transparent hover:text-foreground/80"}`}>
               <t.icon size={15} />
               {t.label}
             </button>
@@ -508,6 +668,7 @@ export default function AdminPanel() {
         </div>
         {activeTab === "users"   && <UsersTab />}
         {activeTab === "content" && <ContentTab />}
+        {activeTab === "notifs"  && <NotificationsTab />}
       </div>
     </div>
   );

@@ -2,7 +2,10 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import AppSidebar from "../components/dashboard/AppSidebar";
 import AppNavbar from "../components/Shared/AppNavbar";
+import ChatWidget from "../components/Chat/ChatWidget";
 import { useIsMobile } from "../hooks/use-mobile";
+import useAuthStore from "../store/authStore";
+import api from "../lib/api";
 
 export const SidebarCtx = createContext({ collapsed: false, isMobile: false, toggle: () => {} });
 export const useSidebarCtx = () => useContext(SidebarCtx);
@@ -10,6 +13,14 @@ export const useSidebarCtx = () => useContext(SidebarCtx);
 export default function DashboardLayout() {
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
+  const { user, setUser } = useAuthStore();
+
+  // Load user from API on mount if token exists but user is null (e.g. page refresh)
+  useEffect(() => {
+    if (!user && localStorage.getItem("apex-token")) {
+      api.get("/profile").then(({ data }) => setUser(data.user)).catch(() => {});
+    }
+  }, [user, setUser]);
 
   // Auto-collapse when switching to mobile
   useEffect(() => {
@@ -39,6 +50,7 @@ export default function DashboardLayout() {
             <Outlet />
           </main>
         </div>
+        <ChatWidget />
       </div>
     </SidebarCtx.Provider>
   );

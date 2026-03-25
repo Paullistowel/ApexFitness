@@ -1,6 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import useAuthStore from "../../store/authStore";
+import api from "../../lib/api";
 import img1 from "../../Assets/image1.jpeg";
 import img2 from "../../Assets/image2.jpeg";
 import img5 from "../../Assets/image5.jpeg";
@@ -19,7 +23,9 @@ const ACTIVITY_OPTIONS  = ["Sedentary", "Lightly Active", "Moderately Active", "
 const TRAINING_OPTIONS  = ["Strength Training", "Cardio", "HIIT", "Yoga", "Mixed Routine"];
 const DIETARY_OPTIONS   = ["None", "Vegetarian", "Vegan", "Gluten-Free", "Keto"];
 
-export default function OnboardingModal({ onClose }) {
+export default function OnboardingModal({ onClose, signupData, isGoogleAuth = false }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
 
@@ -66,10 +72,29 @@ export default function OnboardingModal({ onClose }) {
     setStep(2);
   }
 
-  function goFinish() {
+  async function goFinish() {
     const e = validateStep2();
     if (Object.keys(e).length) { setErrors(e); return; }
+
+    if (!isGoogleAuth) {
+      const { register } = useAuthStore.getState();
+      const result = await register(signupData.name, signupData.email, signupData.password);
+      if (!result.success) { setErrors({ server: result.message }); return; }
+    }
+
+    await api.put("/profile", {
+      age: +age,
+      gender,
+      height_cm: +height,
+      weight_kg: +weight,
+      goal_weight_kg: +targetWeight,
+      primary_goal: selectedGoal,
+    });
+
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+
     onClose();
+    navigate("/dashboard");
   }
 
   const variants = {
@@ -190,7 +215,10 @@ export default function OnboardingModal({ onClose }) {
             </div>
 
             {/* Footer */}
-            <div className="mt-8 flex items-center justify-between">
+            {errors.server && (
+              <p className="mt-4 text-sm text-red-400 text-center">{errors.server}</p>
+            )}
+            <div className="mt-4 flex items-center justify-between">
               <ProgressDots active={step} />
               <div className="flex items-center gap-3">
                 {step === 2 && (

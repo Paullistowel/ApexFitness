@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dumbbell, Droplets, Salad, Moon, Sun, Lock, Mail,
   CreditCard, LogOut, Shield, HelpCircle, FileText,
   ChevronRight, X, Eye, EyeOff, AlertCircle,
 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
+import useAuthStore from "../../store/authStore";
+import api from "../../lib/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function SectionCard({ title, children }) {
@@ -64,14 +68,24 @@ function SettingRow({ label, description, value, icon: Icon, onClick, danger = f
 function PasswordModal({ onClose }) {
   const [show, setShow] = useState({ current: false, new: false, confirm: false });
   const [vals, setVals] = useState({ current: "", new: "", confirm: "" });
+  const [error, setError] = useState("");
   const set    = (k, v) => setVals((p) => ({ ...p, [k]: v }));
   const toggle = (k)    => setShow((p) => ({ ...p, [k]: !p[k] }));
   const { toast } = useToast();
 
+  const mutation = useMutation({
+    mutationFn: () => api.put("/password", { currentPassword: vals.current, newPassword: vals.new }),
+    onSuccess: () => {
+      toast.success("Password Updated", "Your password has been changed successfully.");
+      onClose();
+    },
+    onError: (err) => setError(err.response?.data?.message || "Failed to update password."),
+  });
+
   const handleUpdate = () => {
     if (!vals.current || !vals.new || vals.new !== vals.confirm) return;
-    toast.success("Password Updated", "Your password has been changed successfully.");
-    onClose();
+    setError("");
+    mutation.mutate();
   };
 
   return (
@@ -110,16 +124,21 @@ function PasswordModal({ onClose }) {
             <AlertCircle size={13} /> Passwords do not match
           </div>
         )}
+        {error && (
+          <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-xl border border-red-500/20">
+            <AlertCircle size={13} /> {error}
+          </div>
+        )}
         <div className="flex gap-3 pt-1">
           <button onClick={onClose} className="flex-1 py-3 border border-border/10 rounded-2xl text-sm font-semibold text-muted hover:bg-overlay/5 transition-colors">
             Cancel
           </button>
           <button
             onClick={handleUpdate}
-            disabled={!vals.current || !vals.new || vals.new !== vals.confirm}
-            className="flex-1 py-3 bg-primary hover:bg-primary disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl text-sm font-bold text-foreground transition-colors"
+            disabled={!vals.current || !vals.new || vals.new !== vals.confirm || mutation.isPending}
+            className="flex-1 py-3 bg-primary disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl text-sm font-bold text-foreground transition-colors"
           >
-            Update
+            {mutation.isPending ? "Updating..." : "Update"}
           </button>
         </div>
       </div>
@@ -129,11 +148,38 @@ function PasswordModal({ onClose }) {
 
 // ─── Exported content (no page wrapper) ───────────────────────────────────────
 export default function SettingsContent() {
+  const logout = useAuthStore((s) => s.logout);
+  const { toast } = useToast();
+  const { theme, toggle } = useTheme();
   const [notif, setNotif]               = useState({ workout: true, water: true, diet: false });
-  const [darkMode, setDarkMode]         = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  const toggleNotif = (k) => setNotif((p) => ({ ...p, [k]: !p[k] }));
+  const { data: profileData } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => api.get("/profile").then((r) => r.data),
+  });
+
+  // Populate toggles from real settings on load
+  useEffect(() => {
+    const s = profileData?.settings;
+    if (!s) return;
+    setNotif({ workout: s.notif_workout, water: s.notif_water, diet: s.notif_diet });
+  }, [profileData]);
+
+  const settingsMutation = useMutation({
+    mutationFn: (payload) => api.put("/settings", payload),
+    onError: () => toast.error("Error", "Failed to save settings."),
+  });
+
+  const toggleNotif = (k) => {
+    const updated = { ...notif, [k]: !notif[k] };
+    setNotif(updated);
+    settingsMutation.mutate({
+      notif_workout: updated.workout,
+      notif_water:   updated.water,
+      notif_diet:    updated.diet,
+    });
+  };
 
   return (
     <>
@@ -158,7 +204,7 @@ export default function SettingsContent() {
         <SectionCard title="Appearance">
           <SettingToggle
             label="Dark Mode" description="Switch to a darker interface theme"
-            icon={darkMode ? Moon : Sun} value={darkMode} onChange={setDarkMode}
+            icon={theme === "dark" ? Moon : Sun} value={theme === "dark"} onChange={toggle}
             color="bg-gray-700"
           />
         </SectionCard>
@@ -168,7 +214,7 @@ export default function SettingsContent() {
             label="Update Password" description="Change your account password"
             icon={Lock} onClick={() => setShowPasswordModal(true)}
           />
-          <SettingRow label="Change Email" description="emma@gmail.com" icon={Mail} onClick={() => {}} />
+          <SettingRow label="Change Email" description={profileData?.user?.email ?? "—"} icon={Mail} onClick={() => {}} />
           <SettingRow
             label="Manage Subscription" description="Pro Plan · Renews Apr 1, 2026"
             icon={CreditCard} onClick={() => {}}
@@ -182,7 +228,7 @@ export default function SettingsContent() {
         </SectionCard>
 
         <SectionCard title="Danger Zone">
-          <SettingRow label="Log Out" icon={LogOut} onClick={() => {}} danger />
+          <SettingRow label="Log Out" icon={LogOut} onClick={logout} danger />
         </SectionCard>
 
         <p className="text-center text-xs text-muted pb-2">

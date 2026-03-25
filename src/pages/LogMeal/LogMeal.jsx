@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useToast } from "../../context/ToastContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../lib/api";
 import {
   Search,
   Plus,
@@ -16,21 +18,22 @@ import {
   ShoppingBasket,
 } from "lucide-react";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const foodDatabase = [
-  { id: 1,  name: "Grilled Chicken Breast",  kcal: 165, per: "100g",    protein: 31,  carbs: 0,   fat: 3.6, category: "Protein", img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=120&q=80" },
-  { id: 2,  name: "Boiled Eggs (2 large)",   kcal: 155, per: "2 eggs",  protein: 13,  carbs: 1.1, fat: 11,  category: "Protein", img: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=120&q=80" },
-  { id: 3,  name: "Brown Rice (cooked)",     kcal: 216, per: "cup",     protein: 5,   carbs: 45,  fat: 1.8, category: "Carbs",   img: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=120&q=80" },
-  { id: 4,  name: "Avocado",                 kcal: 234, per: "whole",   protein: 2.9, carbs: 12,  fat: 21,  category: "Fats",    img: "https://images.unsplash.com/photo-1519162808019-7de1683fa2ad?w=120&q=80" },
-  { id: 5,  name: "Greek Yogurt",            kcal: 100, per: "100g",    protein: 10,  carbs: 3.6, fat: 0.7, category: "Protein", img: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=120&q=80" },
-  { id: 6,  name: "Banana",                  kcal: 89,  per: "medium",  protein: 1.1, carbs: 23,  fat: 0.3, category: "Carbs",   img: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=120&q=80" },
-  { id: 7,  name: "Salmon Fillet",           kcal: 208, per: "100g",    protein: 20,  carbs: 0,   fat: 13,  category: "Protein", img: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=120&q=80" },
-  { id: 8,  name: "Oats (dry)",              kcal: 389, per: "100g",    protein: 17,  carbs: 66,  fat: 7,   category: "Carbs",   img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=120&q=80" },
-  { id: 9,  name: "Almonds",                 kcal: 579, per: "100g",    protein: 21,  carbs: 22,  fat: 50,  category: "Fats",    img: "https://images.unsplash.com/photo-1508061942333-69983c9dd0ef?w=120&q=80" },
-  { id: 10, name: "Sweet Potato",            kcal: 86,  per: "100g",    protein: 1.6, carbs: 20,  fat: 0.1, category: "Carbs",   img: "https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?w=120&q=80" },
-  { id: 11, name: "Broccoli (steamed)",      kcal: 35,  per: "100g",    protein: 2.4, carbs: 7,   fat: 0.4, category: "Veggies", img: "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=120&q=80" },
-  { id: 12, name: "Whole Milk",              kcal: 61,  per: "100ml",   protein: 3.2, carbs: 4.8, fat: 3.3, category: "Dairy",   img: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=120&q=80" },
-];
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=120&q=80";
+
+function normalizeFood(f) {
+  return {
+    id: f.id,
+    name: f.name,
+    kcal: f.kcal_per_portion ?? f.kcal ?? 0,
+    per: f.portion_label || f.per || "portion",
+    protein: f.protein_g ?? f.protein ?? 0,
+    carbs: f.carbs_g ?? f.carbs ?? 0,
+    fat: f.fat_g ?? f.fat ?? 0,
+    category: f.category || "Other",
+    img: f.img_url || f.img || FALLBACK_IMG,
+  };
+}
 
 const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack", "Drink", "Supplement"];
 
@@ -52,10 +55,18 @@ const categoryColors = {
 };
 
 // ─── Custom Meal Modal ─────────────────────────────────────────────────────────
+const foodCategories = [
+  { label: "Protein", color: "#f97316", bg: "bg-primary/15",     text: "text-primary",     border: "border-primary/30"    },
+  { label: "Carbs",   color: "#3b82f6", bg: "bg-blue-500/15",    text: "text-blue-400",    border: "border-blue-500/30"   },
+  { label: "Fats",    color: "#eab308", bg: "bg-yellow-500/15",  text: "text-yellow-400",  border: "border-yellow-500/30" },
+  { label: "Veggies", color: "#22c55e", bg: "bg-green-500/15",   text: "text-green-400",   border: "border-green-500/30"  },
+  { label: "Dairy",   color: "#06b6d4", bg: "bg-cyan-500/15",    text: "text-cyan-400",    border: "border-cyan-500/30"   },
+];
+
 function CustomMealModal({ onSave, onClose }) {
   const [form, setForm] = useState({
     name: "", calories: "", protein: "", carbs: "", fat: "",
-    category: "Breakfast", fibre: "", sugar: "", sodium: "",
+    category: "Protein", fibre: "", sugar: "", sodium: "",
   });
   const [showExtra, setShowExtra] = useState(false);
   const [saveToLib, setSaveToLib] = useState(true);
@@ -93,22 +104,19 @@ function CustomMealModal({ onSave, onClose }) {
           <div>
             <label className="text-xs font-bold text-muted uppercase tracking-wider">Select Category</label>
             <div className="mt-2 flex flex-wrap gap-2">
-              {mealTypes.map((t) => {
-                const cfg = mealTypeConfig[t];
-                return (
-                  <button
-                    key={t}
-                    onClick={() => set("category", t)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                      form.category === t
-                        ? `${cfg.bg} ${cfg.text} ${cfg.border}`
-                        : "bg-overlay/5 text-muted border-border/10 hover:bg-overlay/10"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                );
-              })}
+              {foodCategories.map(({ label, bg, text, border }) => (
+                <button
+                  key={label}
+                  onClick={() => set("category", label)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                    form.category === label
+                      ? `${bg} ${text} ${border}`
+                      : "bg-overlay/5 text-muted border-border/10 hover:bg-overlay/10"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -285,7 +293,7 @@ function FoodItem({ food, qty, onAdd, onRemove }) {
 }
 
 // ─── Summary Panel ─────────────────────────────────────────────────────────────
-function SummaryPanel({ selected, mealType, onSave, onClearAll }) {
+function SummaryPanel({ selected, mealType, onSave, onClearAll, isSaving }) {
   const totalKcal  = selected.reduce((a, i) => a + i.food.kcal    * i.qty, 0);
   const totalProt  = selected.reduce((a, i) => a + i.food.protein * i.qty, 0);
   const totalCarbs = selected.reduce((a, i) => a + i.food.carbs   * i.qty, 0);
@@ -346,11 +354,15 @@ function SummaryPanel({ selected, mealType, onSave, onClearAll }) {
       <div className="space-y-2 pt-1">
         <button
           onClick={onSave}
-          disabled={selected.length === 0}
+          disabled={selected.length === 0 || isSaving}
           className="w-full py-3 bg-primary hover:bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-foreground font-bold rounded-2xl transition-colors text-sm flex items-center justify-center gap-2"
         >
-          <Check size={15} />
-          Save Meal
+          {isSaving ? (
+            <div className="w-4 h-4 border-2 border-foreground/40 border-t-foreground rounded-full animate-spin" />
+          ) : (
+            <Check size={15} />
+          )}
+          {isSaving ? "Saving..." : "Save Meal"}
         </button>
         {selected.length > 0 && (
           <button
@@ -368,14 +380,46 @@ function SummaryPanel({ selected, mealType, onSave, onClearAll }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function LogMeal() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch]         = useState("");
   const [mealType, setMealType]     = useState("Breakfast");
   const [selected, setSelected]     = useState([]);
   const [showCustom, setShowCustom] = useState(false);
 
-  const filtered = foodDatabase.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // ── Fetch foods from API ──
+  const { data: rawFoods = [], isLoading: foodsLoading } = useQuery({
+    queryKey: ["foods", search],
+    queryFn: () =>
+      api.get(`/foods${search ? `?search=${encodeURIComponent(search)}` : ""}`).then((r) => r.data),
+    staleTime: 60_000,
+  });
+
+  const foods = rawFoods.map(normalizeFood);
+
+  // ── Log meal mutation ──
+  const saveMealMutation = useMutation({
+    mutationFn: (payload) => api.post("/meals/log", payload),
+    onSuccess: () => {
+      toast.success("Meal Logged", `${mealType} added to your nutrition diary.`);
+      setSelected([]);
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    },
+    onError: (err) => {
+      toast.error("Error", err.response?.data?.message || "Failed to log meal.");
+    },
+  });
+
+  // ── Create custom food mutation ──
+  const createFoodMutation = useMutation({
+    mutationFn: (payload) => api.post("/foods", payload),
+    onSuccess: (res) => {
+      addFood(normalizeFood(res.data));
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+    },
+    onError: (err) => {
+      toast.error("Error", err.response?.data?.message || "Failed to save food.");
+    },
+  });
 
   const getQty = (id) => selected.find((s) => s.food.id === id)?.qty || 0;
 
@@ -396,23 +440,26 @@ export default function LogMeal() {
   };
 
   const handleSave = () => {
-    toast.success("Meal Logged", `${mealType} added to your nutrition diary.`);
-    setSelected([]);
+    saveMealMutation.mutate({
+      meal_type: mealType,
+      date: new Date().toISOString().slice(0, 10),
+      items: selected.map(({ food, qty }) => ({ food_id: food.id, quantity: qty })),
+    });
   };
 
   const handleCustomSave = (form) => {
-    const newFood = {
-      id: Date.now(),
+    createFoodMutation.mutate({
       name: form.name || "Custom Meal",
-      kcal: Number(form.calories) || 0,
-      per: "portion",
-      protein: Number(form.protein) || 0,
-      carbs: Number(form.carbs) || 0,
-      fat: Number(form.fat) || 0,
+      kcal_per_portion: Number(form.calories) || 0,
+      portion_label: "portion",
+      protein_g: Number(form.protein) || 0,
+      carbs_g: Number(form.carbs) || 0,
+      fat_g: Number(form.fat) || 0,
+      fibre_g: Number(form.fibre) || 0,
+      sugar_g: Number(form.sugar) || 0,
+      sodium_mg: Number(form.sodium) || 0,
       category: form.category,
-      img: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=120&q=80",
-    };
-    addFood(newFood);
+    });
   };
 
   return (
@@ -476,17 +523,23 @@ export default function LogMeal() {
 
             {/* Food list */}
             <div className="space-y-3">
-              {filtered.map((food) => (
-                <FoodItem
-                  key={food.id}
-                  food={food}
-                  qty={getQty(food.id)}
-                  onAdd={() => addFood(food)}
-                  onRemove={() => removeFood(food)}
-                />
-              ))}
+              {foodsLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                foods.map((food) => (
+                  <FoodItem
+                    key={food.id}
+                    food={food}
+                    qty={getQty(food.id)}
+                    onAdd={() => addFood(food)}
+                    onRemove={() => removeFood(food)}
+                  />
+                ))
+              )}
 
-              {filtered.length === 0 && (
+              {!foodsLoading && foods.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <Search size={28} className="text-subtle" />
                   <p className="text-sm text-muted font-semibold">No foods found for "{search}"</p>
@@ -517,6 +570,7 @@ export default function LogMeal() {
               mealType={mealType}
               onSave={handleSave}
               onClearAll={() => setSelected([])}
+              isSaving={saveMealMutation.isPending}
             />
           </div>
         </div>

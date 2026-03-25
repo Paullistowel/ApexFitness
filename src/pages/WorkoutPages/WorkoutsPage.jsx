@@ -38,7 +38,7 @@ export default function WorkoutsPage() {
           <WorkoutLibrary />
         </div>
       )}
-      {activeTab === "start" && <StartWorkout />}
+      {activeTab === "start" && <StartWorkout onDone={() => setActiveTab("library")} />}
     </div>
   );
 }

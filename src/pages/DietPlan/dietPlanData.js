@@ -1,6 +1,16 @@
-export const DAYS       = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-export const FULL_DATES = ["Mar 10","Mar 11","Mar 12","Mar 13","Mar 14","Mar 15","Mar 16"];
-export const TODAY_IDX  = 2; // Wednesday
+export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// 0 = Monday … 6 = Sunday
+export const TODAY_IDX = (new Date().getDay() + 6) % 7;
+
+// Dates for Mon–Sun of the current week
+const _monday = new Date();
+_monday.setDate(_monday.getDate() - TODAY_IDX);
+export const FULL_DATES = Array.from({ length: 7 }, (_, i) => {
+  const d = new Date(_monday);
+  d.setDate(_monday.getDate() + i);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+});
 
 function generateMeals(bCal, lCal, sCal, dCal) {
   return [

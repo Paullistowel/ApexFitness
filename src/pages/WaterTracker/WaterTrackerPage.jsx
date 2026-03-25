@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../../context/ToastContext";
+import api from "../../lib/api";
 import {
   Droplets,
   Plus,
@@ -31,17 +33,6 @@ const quickAmounts = [
   { label: "1 L",    value: 1000, icon: "🫙" },
 ];
 
-const weekHistory = [
-  { day: "Mon", amount: 2800 },
-  { day: "Tue", amount: 3000 },
-  { day: "Wed", amount: 2400 },
-  { day: "Thu", amount: 3200 },
-  { day: "Fri", amount: 1800 },
-  { day: "Sat", amount: 2600 },
-  { day: "Sun", amount: 3000 },
-];
-
-const TODAY_IDX = 4; // Friday
 
 function fmt(ml) {
   return ml >= 1000 ? `${(ml / 1000).toFixed(1)} L` : `${ml} ml`;
@@ -213,7 +204,7 @@ function WeeklyChart({ data, goal }) {
             {data.map((entry, i) => (
               <Cell
                 key={i}
-                fill={i === TODAY_IDX ? "#38bdf8" : entry.amount >= goal ? "#22c55e" : "#1e4a6e"}
+                fill={i === data.length - 1 ? "#38bdf8" : entry.amount >= goal ? "#22c55e" : "#1e4a6e"}
               />
             ))}
           </Bar>
@@ -226,7 +217,7 @@ function WeeklyChart({ data, goal }) {
             {d.amount >= goal && (
               <span className="text-[10px] text-green-400 font-black">✓</span>
             )}
-            {i === TODAY_IDX && d.amount < goal && (
+            {i === data.length - 1 && d.amount < goal && (
               <span className="text-[10px] text-blue-400 font-black">•</span>
             )}
           </div>
@@ -290,45 +281,71 @@ function ReminderCard({ enabled, interval, onToggle, onChangeInterval }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function WaterTracker() {
   const { toast } = useToast();
-  const [consumed, setConsumed]             = useState(1000);
-  const [log, setLog]                       = useState([
-    { id: 1, amount: 250, time: "9:12 AM"  },
-    { id: 2, amount: 500, time: "10:12 AM" },
-    { id: 3, amount: 250, time: "12:45 PM" },
-  ]);
-  const [goal, setGoal]                     = useState(ML_GOAL);
-  const [reminder, setReminder]             = useState(true);
-  const [reminderInterval, setReminderInterval] = useState(2);
-  const [showCustom, setShowCustom]         = useState(false);
-  const [showInsight, setShowInsight]       = useState(true);
-  const [weekData, setWeekData]             = useState(weekHistory);
+  const queryClient = useQueryClient();
+  const [showCustom, setShowCustom] = useState(false);
+  const [showInsight, setShowInsight] = useState(true);
 
-  const addWater = (amount) => {
-    const entry = { id: Date.now(), amount, time: timeNow() };
-    setLog((prev) => [entry, ...prev]);
-    setConsumed((prev) => {
-      const next = Math.min(prev + amount, goal * 1.5);
-      if (next >= goal && prev < goal) {
+  // ── Fetch today's water data ──
+  const { data: todayData } = useQuery({
+    queryKey: ["water-today"],
+    queryFn: () => api.get("/water/today").then((r) => r.data),
+  });
+
+  // ── Fetch weekly history ──
+  const { data: historyData } = useQuery({
+    queryKey: ["water-history"],
+    queryFn: () => api.get("/water/history?days=7").then((r) => r.data),
+  });
+
+  const consumed = todayData?.consumed_ml ?? 0;
+  const goal     = todayData?.goal_ml ?? ML_GOAL;
+  const log      = (todayData?.entries ?? []).map((e) => ({
+    id:     e.id,
+    amount: e.amount_ml,
+    time:   new Date(e.logged_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  })).reverse();
+
+  const weekData = (historyData ?? []).map((d) => ({
+    day:    new Date(d.day).toLocaleDateString("en-US", { weekday: "short" }),
+    amount: Number(d.amount_ml),
+  }));
+
+  // ── Add water mutation ──
+  const addMutation = useMutation({
+    mutationFn: (amount_ml) => api.post("/water/log", { amount_ml }),
+    onSuccess: (_, amount_ml) => {
+      queryClient.invalidateQueries({ queryKey: ["water-today"] });
+      queryClient.invalidateQueries({ queryKey: ["water-history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      const next = consumed + amount_ml;
+      if (next >= goal && consumed < goal) {
         toast.success("Goal Reached! 🎉", `You hit your ${goal / 1000}L hydration target.`);
       } else {
-        toast.info(`+${fmt(amount)} logged`, "Keep it up — stay hydrated!");
+        toast.info(`+${fmt(amount_ml)} logged`, "Keep it up — stay hydrated!");
       }
-      return next;
-    });
-    setWeekData((prev) =>
-      prev.map((d, i) =>
-        i === TODAY_IDX ? { ...d, amount: Math.min(d.amount + amount, 4000) } : d
-      )
-    );
-  };
+    },
+  });
 
-  const deleteEntry = (id) => {
-    const entry = log.find((e) => e.id === id);
-    if (entry) {
-      setLog((prev) => prev.filter((e) => e.id !== id));
-      setConsumed((prev) => Math.max(0, prev - entry.amount));
-    }
-  };
+  // ── Delete entry mutation ──
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/water/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["water-today"] });
+      queryClient.invalidateQueries({ queryKey: ["water-history"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    },
+  });
+
+  // ── Update goal/reminders ──
+  const settingsMutation = useMutation({
+    mutationFn: (settings) => api.put("/settings", settings),
+  });
+
+  const reminder         = todayData ? true : true;
+  const reminderInterval = 2;
+
+  const addWater    = (amount) => addMutation.mutate(amount);
+  const deleteEntry = (id)     => deleteMutation.mutate(id);
 
   const remaining = Math.max(goal - consumed, 0);
   const isGoalMet = consumed >= goal;
@@ -348,7 +365,7 @@ export default function WaterTracker() {
             <span className="text-xs font-semibold text-muted">Daily Goal:</span>
             <select
               value={goal}
-              onChange={(e) => setGoal(Number(e.target.value))}
+              onChange={(e) => settingsMutation.mutate({ water_goal_ml: Number(e.target.value) })}
               className="text-xs font-black text-foreground bg-transparent focus:outline-none cursor-pointer"
             >
               {[1500, 2000, 2500, 3000, 3500, 4000].map((v) => (
@@ -473,8 +490,8 @@ export default function WaterTracker() {
             <ReminderCard
               enabled={reminder}
               interval={reminderInterval}
-              onToggle={() => setReminder((p) => !p)}
-              onChangeInterval={setReminderInterval}
+              onToggle={() => settingsMutation.mutate({ water_reminder_enabled: !reminder })}
+              onChangeInterval={(h) => settingsMutation.mutate({ water_reminder_interval_hrs: h })}
             />
 
             {/* Today's log */}

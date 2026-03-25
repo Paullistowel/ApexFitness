@@ -2,47 +2,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useMediaQuery } from "usehooks-ts";
+import { useQuery } from "@tanstack/react-query";
 import {
   Play, BookOpen, CalendarDays, ClipboardList, Droplets,
   Flame, Footprints, Scale, CheckCircle2, MessageSquare,
 } from "lucide-react";
 import WeightTrendChart  from "../../components/Shared/WeightTrendChart";
 import ActivityChart     from "../../components/Shared/ActivityChart";
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const weight7 = [
-  { day: "Mon", weight: 86 }, { day: "Tue", weight: 84 },
-  { day: "Wed", weight: 83 }, { day: "Thu", weight: 82.5 },
-  { day: "Fri", weight: 83 }, { day: "Sat", weight: 82 },
-  { day: "Sun", weight: 81 },
-];
-
-const weight30 = [
-  { day: "1",  weight: 90   }, { day: "2",  weight: 89.5 }, { day: "3",  weight: 89   },
-  { day: "4",  weight: 88.8 }, { day: "5",  weight: 88.5 }, { day: "6",  weight: 88   },
-  { day: "7",  weight: 87.5 }, { day: "8",  weight: 87.8 }, { day: "9",  weight: 87.2 },
-  { day: "10", weight: 87   }, { day: "11", weight: 86.5 }, { day: "12", weight: 86.2 },
-  { day: "13", weight: 86   }, { day: "14", weight: 85.8 }, { day: "15", weight: 85.5 },
-  { day: "16", weight: 85.8 }, { day: "17", weight: 85.2 }, { day: "18", weight: 85   },
-  { day: "19", weight: 84.5 }, { day: "20", weight: 84.2 }, { day: "21", weight: 84   },
-  { day: "22", weight: 83.8 }, { day: "23", weight: 83.5 }, { day: "24", weight: 83.2 },
-  { day: "25", weight: 83   }, { day: "26", weight: 82.5 }, { day: "27", weight: 82.2 },
-  { day: "28", weight: 82   }, { day: "29", weight: 81.5 }, { day: "30", weight: 81   },
-];
-
-const stepsData = [
-  { day: "Mon", value: 4500 }, { day: "Tue", value: 2000 },
-  { day: "Wed", value: 3200 }, { day: "Thu", value: 3500 },
-  { day: "Fri", value: 3800 }, { day: "Sat", value: 2800 },
-  { day: "Sun", value: 4800 },
-];
-
-const workoutData = [
-  { day: "Mon", value: 45 }, { day: "Tue", value: 0  },
-  { day: "Wed", value: 30 }, { day: "Thu", value: 60 },
-  { day: "Fri", value: 50 }, { day: "Sat", value: 20 },
-  { day: "Sun", value: 75 },
-];
+import useAuthStore from "../../store/authStore";
+import api from "../../lib/api";
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 const fadeUp = {
@@ -113,26 +81,73 @@ function QuickAction({ icon: Icon, label, to }) {
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function Dashboard() {
   const isMobile = useMediaQuery("(max-width: 1024px)");
+  const user = useAuthStore((s) => s.user);
 
   const [weightRange, setWeightRange] = useState("7 days");
   const [activityTab, setActivityTab] = useState("Steps");
 
-  const weightData        = weightRange === "7 days" ? weight7 : weight30;
-  const weightDomain      = weightRange === "7 days" ? [80, 87] : [80, 91];
-  const activityData      = activityTab === "Steps" ? stepsData : workoutData;
+  // ── Live API data ──
+  const { data: summary } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: () => api.get("/dashboard/summary").then((r) => r.data),
+  });
+
+  const { data: weightHistory } = useQuery({
+    queryKey: ["weight-history", weightRange],
+    queryFn: () => api.get(`/user/weight-history?range=${weightRange === "7 days" ? "7d" : "30d"}`).then((r) => r.data),
+  });
+
+  const { data: activityHistory } = useQuery({
+    queryKey: ["activity", activityTab],
+    queryFn: () => api.get(`/user/activity?type=${activityTab === "Steps" ? "steps" : "workout"}&range=7d`).then((r) => r.data),
+  });
+
+  const { data: planData } = useQuery({
+    queryKey: ["workout-plan"],
+    queryFn: () => api.get("/workout-plan/active").then((r) => r.data),
+  });
+
+  // Today's day: 0=Mon … 6=Sun
+  const todayDayIdx = (new Date().getDay() + 6) % 7;
+  const DAY_NAMES_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const todayPlanDay = planData?.days?.find((d) => d.day_index === todayDayIdx) ?? null;
+
+  // ── Derived values (fall back to 0 while loading) ──
+  const macros       = summary?.macros    ?? { protein_g: 0, carbs_g: 0, fat_g: 0, calories_consumed: 0, goal_calories: 2000 };
+  const waterMl      = summary?.water_ml  ?? 0;
+  const waterGoal    = summary?.water_goal_ml ?? 3000;
+  const calsBurned   = summary?.calories_burned ?? 0;
+  const streak       = summary?.streak    ?? 0;
+
+  const weightData   = weightHistory?.length ? weightHistory : [];
+  const weightVals   = weightData.map((d) => d.weight_kg ?? d.weight);
+  const weightMin    = weightVals.length ? Math.floor(Math.min(...weightVals)) - 2 : 75;
+  const weightMax    = weightVals.length ? Math.ceil(Math.max(...weightVals))  + 2 : 95;
+  const weightDomain = [weightMin, weightMax];
+
+  const activityData = activityHistory?.length ? activityHistory.map((d) => ({ day: d.day, value: Number(d.value) })) : [];
+
   const activityFormatter = activityTab === "Steps"
     ? (v) => [v.toLocaleString(), "Steps"]
     : (v) => [`${v} min`, "Workout"];
 
-  const streakDays = [
-    { label: "Mon", done: true  },
-    { label: "Tue", done: true  },
-    { label: "Wed", done: true  },
-    { label: "Thu", done: true  },
-    { label: "Fri", done: true  },
-    { label: "Sat", done: true  },
-    { label: "Sun", done: false, today: true },
-  ];
+  // Build streak row for the week (Mon–Sun)
+  const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const todayIdx   = (new Date().getDay() + 6) % 7; // 0=Mon
+  const streakDays = DAY_LABELS.map((label, i) => ({
+    label,
+    done:  i < todayIdx && i < streak,
+    today: i === todayIdx,
+  }));
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  })();
+
+  const dateLabel = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   return (
     <div className="min-h-full bg-surface">
@@ -147,16 +162,16 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-black text-foreground">
-                Good morning,{" "}
+                {greeting},{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-700">
-                  Emmanuel
+                  {user?.name?.split(" ")[0] ?? "there"}
                 </span>
               </h1>
               <p className="text-sm text-muted mt-0.5">Here's your fitness summary for today.</p>
             </div>
             <div className="flex items-center gap-2 bg-overlay/5 border border-border/10 rounded-full px-4 py-2 text-xs text-muted self-start sm:self-auto shrink-0">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              Saturday, March 21 2026
+              {dateLabel}
             </div>
           </div>
 
@@ -166,33 +181,29 @@ export default function Dashboard() {
               icon={Flame}
               iconColor="bg-primary"
               label="Calories Burned"
-              value="450 / 1,200 kcal"
-              dot
-              dotColor="bg-primary"
+              value={`${calsBurned} / 1,200 kcal`}
+              dot dotColor="bg-primary"
             />
             <StatChip
               icon={Droplets}
               iconColor="bg-sky-500"
               label="Water Intake"
-              value="1.8 / 3 L"
-              dot
-              dotColor="bg-sky-400"
+              value={`${(waterMl / 1000).toFixed(1)} / ${(waterGoal / 1000).toFixed(1)} L`}
+              dot dotColor="bg-sky-400"
             />
             <StatChip
               icon={Footprints}
               iconColor="bg-violet-500"
               label="Steps Today"
-              value="4,800 steps"
-              dot
-              dotColor="bg-violet-400"
+              value="— steps"
+              dot dotColor="bg-violet-400"
             />
             <StatChip
               icon={Scale}
               iconColor="bg-emerald-600"
               label="Weight"
-              value="82 kg"
-              dot
-              dotColor="bg-emerald-400"
+              value={weightData.length ? `${weightData[weightData.length - 1].weight_kg ?? weightData[weightData.length - 1].weight} kg` : "— kg"}
+              dot dotColor="bg-emerald-400"
             />
           </div>
         </motion.div>
@@ -212,27 +223,35 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">Today's Workout</p>
-                    <h3 className="text-lg font-black text-foreground leading-tight">Chest &amp; Triceps</h3>
-                    <p className="text-sm text-muted mt-0.5">45 min &nbsp;&middot;&nbsp; 5 exercises</p>
 
-                    {/* Progress bar */}
-                    <div className="mt-4 space-y-1.5">
-                      <div className="flex justify-between text-xs text-muted">
-                        <span>Progress</span>
-                        <span className="text-primary font-semibold">2 / 5 done</span>
-                      </div>
-                      <div className="h-2 w-full bg-overlay/10 rounded-full overflow-hidden">
-                        <div className="h-full w-2/5 bg-gradient-to-r from-primary to-blue-700 rounded-full" />
-                      </div>
-                    </div>
+                    {!planData ? (
+                      <p className="text-sm text-muted">Loading plan…</p>
+                    ) : !todayPlanDay || todayPlanDay.is_rest ? (
+                      <>
+                        <h3 className="text-lg font-black text-foreground leading-tight">Rest Day 😴</h3>
+                        <p className="text-sm text-muted mt-0.5">{DAY_NAMES_FULL[todayDayIdx]} · Recovery day</p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-black text-foreground leading-tight">
+                          {todayPlanDay.focus ?? "Workout"}
+                        </h3>
+                        <p className="text-sm text-muted mt-0.5">
+                          {todayPlanDay.estimated_duration_mins
+                            ? `${todayPlanDay.estimated_duration_mins} min · `
+                            : ""}
+                          {todayPlanDay.exercises?.length ?? 0} exercise{(todayPlanDay.exercises?.length ?? 0) !== 1 ? "s" : ""}
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   <Link
-                    to="/workouts"
-                    className="shrink-0 flex items-center gap-2 bg-primary hover:bg-primary transition-colors text-foreground text-sm font-bold px-4 py-2.5 rounded-xl"
+                    to="/workouts/plan"
+                    className="shrink-0 flex items-center gap-2 bg-primary hover:opacity-90 transition-opacity text-foreground text-sm font-bold px-4 py-2.5 rounded-xl"
                   >
                     <Play size={14} className="fill-white" />
-                    Start
+                    {todayPlanDay && !todayPlanDay.is_rest ? "Start" : "Plan"}
                   </Link>
                 </div>
               </div>
@@ -241,12 +260,11 @@ export default function Dashboard() {
             {/* Weight Trend Chart */}
             <motion.div variants={slideIn("left")} initial="hidden" animate="visible">
               <WeightTrendChart
-                data={weightData}
+                data={weightData.map((d) => ({ day: d.day, weight: d.weight_kg ?? d.weight }))}
                 domain={weightDomain}
                 range={weightRange}
                 onRangeChange={setWeightRange}
                 height={isMobile ? 140 : 160}
-                subtitle={weightRange === "30 days" ? "−9 kg over 30 days" : undefined}
               />
             </motion.div>
 
@@ -274,14 +292,14 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-foreground">Nutrition Today</h3>
                 <span className="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5">
-                  1,240 / 2,000 kcal
+                  {Math.round(macros.calories_consumed)} / {macros.goal_calories} kcal
                 </span>
               </div>
               <div className="space-y-3">
-                <MacroRow label="Protein"      current={120} goal={150} unit="g"   barColor="bg-primary" />
-                <MacroRow label="Carbohydrates" current={180} goal={250} unit="g"  barColor="bg-sky-500"    />
-                <MacroRow label="Fat"           current={45}  goal={65}  unit="g"  barColor="bg-violet-500" />
-                <MacroRow label="Calories"      current={1240} goal={2000} unit=" kcal" barColor="bg-emerald-500" />
+                <MacroRow label="Protein"       current={Math.round(macros.protein_g)} goal={150}                   unit="g"    barColor="bg-primary"      />
+                <MacroRow label="Carbohydrates" current={Math.round(macros.carbs_g)}   goal={250}                   unit="g"    barColor="bg-sky-500"      />
+                <MacroRow label="Fat"           current={Math.round(macros.fat_g)}     goal={65}                    unit="g"    barColor="bg-violet-500"   />
+                <MacroRow label="Calories"      current={Math.round(macros.calories_consumed)} goal={macros.goal_calories} unit=" kcal" barColor="bg-emerald-500" />
               </div>
             </motion.div>
 
@@ -293,7 +311,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-foreground">Weekly Streak</h3>
                 <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5">
-                  🔥 7 day streak
+                  🔥 {streak} day streak
                 </span>
               </div>
               <div className="grid grid-cols-7 gap-1">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import useAuthStore from "../../store/authStore";
 import {
   LayoutDashboard,
   Dumbbell,
@@ -69,7 +70,7 @@ const navSections = [
     items: [
       { icon: Bell,   label: "Notifications", href: "/notifications" },
       { icon: User,   label: "Profile",       href: "/profile"       },
-      { icon: Shield, label: "Admin Panel",   href: "/admin"         },
+      { icon: Shield, label: "Admin Panel",   href: "/admin", adminOnly: true },
     ],
   },
 ];
@@ -77,6 +78,10 @@ const navSections = [
 export default function AppSidebar() {
   const { pathname } = useLocation();
   const { collapsed, isMobile, toggle } = useSidebarCtx();
+  const user = useAuthStore((s) => s.user);
+  const initials = user?.name
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
 
   const [open, setOpen] = useState({
     "Diet & Nutrition": pathname.startsWith("/nutrition"),
@@ -104,7 +109,7 @@ export default function AppSidebar() {
                 </p>
               )}
 
-              {section.items.map((item) => {
+              {section.items.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
                 const isActive = item.expandable
                   ? pathname.startsWith(item.baseHref)
                   : pathname === item.href;
@@ -184,12 +189,16 @@ export default function AppSidebar() {
         {!collapsed && (
           <div className="m-3 p-3 rounded-xl bg-primary/10 border border-primary/20">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-foreground text-xs font-bold shrink-0">
-                EA
-              </div>
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt={user.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-foreground text-xs font-bold shrink-0">
+                  {initials}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-foreground truncate">Emmanuel Acquah</p>
-                <p className="text-[10px] text-primary">Pro Member · Weight Loss</p>
+                <p className="text-xs font-bold text-foreground truncate">{user?.name ?? "User"}</p>
+                <p className="text-[10px] text-primary capitalize">{user?.plan ?? "free"} Member</p>
               </div>
               <Link
                 to="/profile"
@@ -204,9 +213,13 @@ export default function AppSidebar() {
 
         {collapsed && !isMobile && (
           <div className="flex justify-center pb-3">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-foreground text-xs font-bold">
-              EA
-            </div>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-foreground text-xs font-bold">
+                {initials}
+              </div>
+            )}
           </div>
         )}
       </aside>

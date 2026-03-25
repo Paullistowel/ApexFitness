@@ -1,16 +1,25 @@
 import { useState } from "react";
 import { Bell, Search, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import ApexLogo from "../../Assets/ApexFitness.logo.png";
 import SearchModal from "../SearchModal/SearchModal";
 import UserDropdown from "./UserDropdown";
 import { useTheme } from "../../context/ThemeContext";
+import api from "../../lib/api";
 
 // ─── Navbar ────────────────────────────────────────────────────────────────────
 export default function AppNavbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
+
+  const { data } = useQuery({
+    queryKey: ["notif-unread-count"],
+    queryFn: () => api.get("/notifications/unread-count").then((r) => r.data),
+    refetchInterval: 60_000,
+  });
+  const unreadCount = data?.count ?? 0;
 
   return (
     <>
@@ -52,9 +61,11 @@ export default function AppNavbar() {
             className="relative w-9 h-9 rounded-lg border border-border/10 bg-overlay/5 flex items-center justify-center hover:bg-overlay/10 transition-colors"
           >
             <Bell size={16} className="text-muted" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full text-foreground text-[10px] flex items-center justify-center font-bold leading-none">
-              3
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full text-foreground text-[10px] flex items-center justify-center font-bold leading-none">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Theme toggle */}

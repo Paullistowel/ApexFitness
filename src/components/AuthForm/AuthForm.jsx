@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGoogleLogin } from "@react-oauth/google";
 import ApexLogo from "../../Assets/ApexFitness.logo.png";
 import GoogleLogo from "../../Assets/google (1).png";
 import OnboardingModal from "./OnboardingModal";
 import Field from "../Shared/Field";
+import useAuthStore from "../../store/authStore";
+import api from "../../lib/api";
 
 /* ─── Validators ─────────────────────────────────────────────────────────── */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,7 +38,28 @@ function validateSignup({ name, email, password, confirmPassword }) {
 export default function AuthForm() {
   const [tab,  setTab]  = useState("login");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isGoogleOnboarding, setIsGoogleOnboarding] = useState(false);
   const navigate = useNavigate();
+  const { login, isLoading, error, clearError, setUser } = useAuthStore();
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async ({ access_token }) => {
+      try {
+        const { data } = await api.post("/auth/google", { access_token });
+        localStorage.setItem("apex-token", data.accessToken);
+        setUser(data.user);
+        if (data.isNewUser) {
+          setIsGoogleOnboarding(true);
+          setShowOnboarding(true);
+        } else {
+          navigate("/dashboard");
+        }
+      } catch (err) {
+        console.error("Google login failed", err);
+      }
+    },
+    flow: "implicit",
+  });
 
   /* Login state */
   const [loginFields, setLoginFields] = useState({ email: "", password: "" });
@@ -50,12 +74,13 @@ export default function AuthForm() {
   const setLogin  = (k) => (e) => setLoginFields  ((p) => ({ ...p, [k]: e.target.value }));
   const setSignup = (k) => (e) => setSignupFields ((p) => ({ ...p, [k]: e.target.value }));
 
-  function handleLoginSubmit(e) {
+  async function handleLoginSubmit(e) {
     e.preventDefault();
     const errs = validateLogin(loginFields);
     if (Object.keys(errs).length) { setLoginErrors(errs); return; }
     setLoginErrors({});
-    navigate("/dashboard");
+    const result = await login(loginFields.email, loginFields.password);
+    if (result.success) navigate("/dashboard");
   }
 
   function handleSignupSubmit(e) {
@@ -71,6 +96,7 @@ export default function AuthForm() {
     setTab(t);
     setLoginErrors({});
     setSignupErrors({});
+    clearError();
   }
 
   return (
@@ -137,12 +163,17 @@ export default function AuthForm() {
                 </Link>
               </div>
 
+              {error && (
+                <p className="text-sm text-red-400 text-center">{error}</p>
+              )}
+
               <div className="space-y-3 pt-1">
                 <button
                   type="submit"
-                  className="h-11 w-full rounded-xl bg-gradient-to-r from-primary to-blue-700 hover:from-primary hover:to-blue-700 text-foreground font-bold text-base shadow-lg hover:shadow-primary/30 transition-all"
+                  disabled={isLoading}
+                  className="h-11 w-full rounded-xl bg-gradient-to-r from-primary to-blue-700 hover:from-primary hover:to-blue-700 text-foreground font-bold text-base shadow-lg hover:shadow-primary/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Sign In
+                  {isLoading ? "Signing in..." : "Sign In"}
                 </button>
 
                 <div className="flex items-center gap-3">
@@ -153,6 +184,7 @@ export default function AuthForm() {
 
                 <button
                   type="button"
+                  onClick={googleLogin}
                   className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border/10 bg-overlay/5 hover:bg-overlay/10 text-foreground/80 hover:text-foreground text-sm font-medium transition-all"
                 >
                   <img src={GoogleLogo} alt="Google" className="h-5 w-5" />
@@ -208,6 +240,7 @@ export default function AuthForm() {
 
                 <button
                   type="button"
+                  onClick={googleLogin}
                   className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-border/10 bg-overlay/5 hover:bg-overlay/10 text-foreground/80 hover:text-foreground text-sm font-medium transition-all"
                 >
                   <img src={GoogleLogo} alt="Google" className="h-5 w-5" />
@@ -220,7 +253,11 @@ export default function AuthForm() {
       </motion.div>
 
       {showOnboarding && (
-        <OnboardingModal onClose={() => setShowOnboarding(false)} />
+        <OnboardingModal
+          signupData={signupFields}
+          isGoogleAuth={isGoogleOnboarding}
+          onClose={() => setShowOnboarding(false)}
+        />
       )}
     </div>
   );

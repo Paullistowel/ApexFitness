@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import DayNavigator from "../../components/DietPlan/DayNavigator";
 import MealSection from "../../components/DietPlan/MealSection";
 import CalorieSummary from "../../components/DietPlan/CalorieSummary";
@@ -10,6 +11,7 @@ import ReplaceMealModal from "../../components/DietPlan/ReplaceMealModal";
 import GeneratePlanModal from "../../components/DietPlan/GeneratePlanModal";
 import AIInsight from "../../components/DietPlan/AIInsight";
 import { weekMeals, TODAY_IDX, mealPools } from "./dietPlanData";
+import api from "../../lib/api";
 
 gsap.registerPlugin(useGSAP);
 
@@ -28,6 +30,20 @@ export default function DietPlanPage() {
   const [showGenerateModal,  setShowGenerateModal]  = useState(false);
   const containerRef = useRef(null);
 
+  // Load saved plan from backend; seed state once data arrives
+  const { data: savedPlan } = useQuery({
+    queryKey: ["diet-plan"],
+    queryFn: () => api.get("/diet/plan").then((r) => r.data),
+  });
+
+  useEffect(() => {
+    if (savedPlan?.plan_data) setPlanData(savedPlan.plan_data);
+  }, [savedPlan]);
+
+  const savePlan = useMutation({
+    mutationFn: (plan) => api.put("/diet/plan", { plan_data: plan }),
+  });
+
   useGSAP(() => {
     gsap.fromTo(
       ".diet-row",
@@ -45,17 +61,18 @@ export default function DietPlanPage() {
 
     if (scope === "today") {
       const newMeals = generator.generateDay(calories);
-      setPlanData((prev) => ({
-        ...prev,
-        [dayIdx]: { goal: calories, meals: newMeals },
-      }));
+      setPlanData((prev) => {
+        const next = { ...prev, [dayIdx]: { goal: calories, meals: newMeals } };
+        savePlan.mutate(next);
+        return next;
+      });
     } else {
-      // Full week
       const newPlan = {};
       for (let i = 0; i < 7; i++) {
         newPlan[i] = { goal: calories, meals: generator.generateDay(calories) };
       }
       setPlanData(newPlan);
+      savePlan.mutate(newPlan);
     }
   };
 
@@ -77,10 +94,9 @@ export default function DietPlanPage() {
       const updatedMeals = prev[dayIdx].meals.map((m) =>
         m.id === replacingMeal ? newMeal : m
       );
-      return {
-        ...prev,
-        [dayIdx]: { ...prev[dayIdx], meals: updatedMeals },
-      };
+      const next = { ...prev, [dayIdx]: { ...prev[dayIdx], meals: updatedMeals } };
+      savePlan.mutate(next);
+      return next;
     });
   };
 

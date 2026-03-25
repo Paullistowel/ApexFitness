@@ -17,6 +17,7 @@ export default function ExercisePopup({
   onClose,
   onBookmark,
   bookmarked,
+  onStart,
 }) {
   const CatIcon = categoryConfig[exercise.category]?.icon;
 
@@ -146,6 +147,7 @@ export default function ExercisePopup({
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
+            onClick={onStart}
             className="w-full py-3.5 bg-primary hover:bg-primary text-foreground font-bold rounded-2xl transition-colors flex items-center justify-center gap-2"
           >
             Start This Exercise

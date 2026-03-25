@@ -9,7 +9,8 @@ import img8 from "../../Assets/image8.jpeg";
 import img9 from "../../Assets/image9.jpeg";
 import img11 from "../../Assets/image11.jpeg";
 
-export const todayDay = "Friday";
+const DAY_MAP = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+export const todayDay = DAY_MAP[new Date().getDay()];
 
 export const categoryColor = {
   Strength: { bg: "bg-primary/10", text: "text-primary", dot: "bg-primary",  border: "border-primary/30" },

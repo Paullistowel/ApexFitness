@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoadingSpinner from "./components/Shared/LoadingSpinner";
 import Toaster from "./components/Toast/Toaster";
+import { ProtectedRoute, AdminRoute } from "./components/Shared/ProtectedRoute";
 
 /* ─── Layouts (small, load eagerly) ─────────────────────────────────────── */
 import MainLayout from "./layouts/MainLayout";
@@ -11,7 +12,8 @@ import DashboardLayout from "./layouts/DashboardLayout";
 const LandingPage        = lazy(() => import("./pages/landingPage/LandingPage"));
 const ContactPage        = lazy(() => import("./pages/ContactUsPage/ContactPage"));
 const AuthPage           = lazy(() => import("./pages/AuthPage/AuthPage"));
-const ForgotPasswordPage = lazy(() => import("./pages/AuthPage/ForgotPasswordPage"));
+const ForgotPasswordPage  = lazy(() => import("./pages/AuthPage/ForgotPasswordPage"));
+const ResetPasswordPage   = lazy(() => import("./pages/AuthPage/ResetPasswordPage"));
 const Dashboard          = lazy(() => import("./pages/DashboardPage/Dashboard"));
 const WorkoutsPage       = lazy(() => import("./pages/WorkoutPages/WorkoutsPage"));
 const WorkoutPlanPage    = lazy(() => import("./pages/workoutPlan/WorkoutPlanPage"));
@@ -25,6 +27,7 @@ const SettingsPage       = lazy(() => import("./pages/SettingsPage/SettingsPage"
 const AdminPanel         = lazy(() => import("./pages/AdminPanel/AdminPanel"));
 const ProgressPage       = lazy(() => import("./pages/Progress/ProgressPage"));
 const WorkoutHistory     = lazy(() => import("./pages/WorkoutHistory/WorkoutHistory"));
+const StartWorkout       = lazy(() => import("./pages/WorkoutPages/StartWorkpage/StartWorkout"));
 const NotFoundPage       = lazy(() => import("./pages/NotFoundPage/NotFoundPage"));
 
 function App() {
@@ -37,7 +40,8 @@ function App() {
               {/* Standalone pages */}
               <Route path="/"                element={<LandingPage />} />
               <Route path="/auth"            element={<AuthPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
+              <Route path="/reset-password"  element={<ResetPasswordPage />} />
 
               {/* Public pages with NavBar + Footer */}
               <Route element={<MainLayout />}>
@@ -45,10 +49,12 @@ function App() {
               </Route>
 
               {/* App routes — sidebar layout */}
-              <Route element={<DashboardLayout />}>
+              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route path="/dashboard"          element={<Dashboard />} />
                 <Route path="/workouts"           element={<WorkoutsPage />} />
                 <Route path="/workouts/plan"      element={<WorkoutPlanPage />} />
+                <Route path="/workouts/start"     element={<StartWorkout />} />
+                <Route path="/workouts/history"   element={<WorkoutHistory />} />
                 <Route path="/diet"               element={<DietPlanPage />} />
                 <Route path="/nutrition/log-meal" element={<LogMeal />} />
                 <Route path="/nutrition/water"    element={<WaterTracker />} />
@@ -56,9 +62,8 @@ function App() {
                 <Route path="/notifications"      element={<NotificationPage />} />
                 <Route path="/profile"            element={<ProfilePage />} />
                 <Route path="/settings"           element={<SettingsPage />} />
-                <Route path="/admin"              element={<AdminPanel />} />
-                <Route path="/progress"          element={<ProgressPage />} />
-                <Route path="/workouts/history"  element={<WorkoutHistory />} />
+                <Route path="/progress"           element={<ProgressPage />} />
+                <Route path="/admin"              element={<AdminRoute><AdminPanel /></AdminRoute>} />
               </Route>
 
               {/* 404 — catch-all */}

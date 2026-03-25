@@ -1,43 +1,104 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "usehooks-ts";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Play, Pause, RotateCcw, SkipForward,
   CheckCircle2, ChevronRight, Flame, Clock,
-  Dumbbell, Trophy, ListChecks,
+  Dumbbell, Trophy, ListChecks, CalendarDays,
 } from "lucide-react";
 import CircularTimer from "../../../components/Shared/CircularTimer";
-
-
-
-import img1 from "../../../Assets/download (1).gif";
-import img2 from "../../../Assets/How To Do Incline Push-Up Perfectly_ 2026 Video Guide.jpg";
-import img3 from "../../../Assets/Lift Manual - Visual Workout Guides.jpg";
-import img4 from "../../../Assets/The Complete Guide to Ab Workout at Home.gif";
-import img5 from "../../../Assets/Side Plank.jpg";
+import api from "../../../lib/api";
 
 gsap.registerPlugin(useGSAP);
-// ─── Workout Data ─────────────────────────────────────────────────────────────
-const workoutExercises = [
-  { id: 1, name: "Jumping Jacks",  sets: 2, reps: null, duration: 60, instruction: "Land softly with slightly bent knees. Keep a steady rhythm.",            muscle: "Full Body",     img: img1 },
-  { id: 2, name: "Push-Ups",       sets: 3, reps: 12,   duration: 45, instruction: "Keep your body in a straight line from head to heels.",                 muscle: "Chest · Triceps", img: img2 },
-  { id: 3, name: "Barbell Squat",  sets: 4, reps: 10,   duration: 50, instruction: "Keep chest up, drive through your heels. Go below parallel.",           muscle: "Quads · Glutes",  img: img3 },
-  { id: 4, name: "Burpees",        sets: 2, reps: null, duration: 40, instruction: "Explosive full-body movement. Keep core tight throughout.",              muscle: "Full Body",     img: img4 },
-  { id: 5, name: "Plank Hold",     sets: 3, reps: null, duration: 30, instruction: "Engage core and glutes. Don't let hips drop or rise.",                  muscle: "Core",          img: img5 },
-];
 
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200&q=80";
 const REST_DURATION = 15;
 
+// ─── Normalizers ──────────────────────────────────────────────────────────────
+function normalizeExercise(ex, idx) {
+  return {
+    id:          ex.id ?? idx,
+    name:        ex.name,
+    sets:        ex.sets  ?? 3,
+    reps:        ex.reps  || null,
+    duration:    ex.duration ?? 45,
+    instruction: ex.instruction ?? "Perform with controlled form and full range of motion.",
+    muscle:      ex.muscle ?? ex.muscle_group ?? ex.category ?? "Full Body",
+    img:         (() => { const u = ex.img || ex.img_url; return u ? (u.startsWith("http") ? u : `${import.meta.env.VITE_BACKEND_URL}${u}`) : FALLBACK_IMG; })(),
+  };
+}
+
+function parseRepsDisplay(str) {
+  if (!str) return { reps: null, duration: 45 };
+  if (str.endsWith(" reps")) return { reps: parseInt(str), duration: 45 };
+  if (str.endsWith("s"))     return { reps: null, duration: parseInt(str) || 45 };
+  return { reps: null, duration: 45 };
+}
+
+function normalizeHistoryExercise(ex, idx) {
+  const { reps, duration } = parseRepsDisplay(ex.reps_display);
+  return {
+    id:          ex.id ?? idx,
+    name:        ex.exercise_name,
+    sets:        ex.sets ?? 3,
+    reps,
+    duration,
+    instruction: "Perform with controlled form and full range of motion.",
+    muscle:      "—",
+    img:         FALLBACK_IMG,
+  };
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-[70vh] flex flex-col items-center justify-center gap-6 p-8 text-center">
+      <div className="relative">
+        <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl scale-150" />
+        <div className="relative w-24 h-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <Dumbbell size={40} className="text-primary" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-2xl font-black text-foreground">No Workout History Yet</h2>
+        <p className="text-sm text-muted max-w-xs leading-relaxed">
+          You haven't completed any sessions yet. Head to your workout plan to kick off your first one.
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center gap-3">
+        <button
+          onClick={() => navigate("/workouts/plan")}
+          className="flex items-center gap-2 bg-primary text-foreground font-bold px-6 py-3 rounded-xl transition-all hover:opacity-90 shadow-lg shadow-primary/20"
+        >
+          <CalendarDays size={16} />
+          Go to Workout Plan
+        </button>
+        <button
+          onClick={() => navigate("/workouts")}
+          className="flex items-center gap-2 bg-overlay/5 border border-border/10 text-foreground/80 font-bold px-6 py-3 rounded-xl hover:bg-overlay/10 transition-all"
+        >
+          Browse Library
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Workout Complete Overlay ─────────────────────────────────────────────────
-function WorkoutComplete({ totalTime, onClose }) {
-  const mins  = Math.floor(totalTime / 60);
+function WorkoutComplete({ totalTime, exerciseCount, isLogging, onClose }) {
+  const mins = Math.floor(totalTime / 60) || 1;
+  const kcal = Math.round(totalTime / 10);
   const stats = [
-    { label: "Duration",  value: `${mins} min`,          icon: Clock    },
-    { label: "Exercises", value: workoutExercises.length, icon: Dumbbell },
-    { label: "Calories",  value: "~320 kcal",             icon: Flame    },
+    { label: "Duration",  value: `${mins} min`,  icon: Clock    },
+    { label: "Exercises", value: exerciseCount,   icon: Dumbbell },
+    { label: "Calories",  value: `~${kcal} kcal`, icon: Flame   },
   ];
 
   return (
@@ -73,17 +134,19 @@ function WorkoutComplete({ totalTime, onClose }) {
         <motion.button
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
           onClick={onClose}
-          className="w-full py-3 bg-gradient-to-r from-primary to-blue-700 hover:from-primary hover:to-blue-700 text-foreground font-bold rounded-full transition-all shadow-lg shadow-primary/20"
+          disabled={isLogging}
+          className="w-full py-3 bg-gradient-to-r from-primary to-blue-700 text-foreground font-bold rounded-full shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-70"
         >
-          Back to Dashboard
+          {isLogging && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+          {isLogging ? "Saving…" : "Done"}
         </motion.button>
       </div>
     </motion.div>
   );
 }
 
-// ─── Exercise Card (animated on change) ──────────────────────────────────────
-function ExerciseCard({ exercise, isRest, currentSet, direction }) {
+// ─── Exercise Card ────────────────────────────────────────────────────────────
+function ExerciseCard({ exercise, isRest, direction }) {
   return (
     <motion.div
       key={exercise.id}
@@ -111,31 +174,41 @@ function ExerciseCard({ exercise, isRest, currentSet, direction }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-export default function StartWorkout() {
-  const navigate  = useNavigate();
-  const isMobile  = useMediaQuery("(max-width: 768px)");
-  const pageRef   = useRef(null);
+// ─── Workout Session ──────────────────────────────────────────────────────────
+function WorkoutSession({ exercises, dayData, fromPlan, sessionLabel, onDone }) {
+  const navigate    = useNavigate();
+  const isMobile    = useMediaQuery("(max-width: 768px)");
+  const pageRef     = useRef(null);
+  const queryClient = useQueryClient();
 
   const [currentIdx,         setCurrentIdx]         = useState(0);
   const [currentSet,         setCurrentSet]         = useState(1);
   const [isPlaying,          setIsPlaying]          = useState(false);
   const [isRest,             setIsRest]             = useState(false);
-  const [timeLeft,           setTimeLeft]           = useState(workoutExercises[0].duration);
+  const [timeLeft,           setTimeLeft]           = useState(exercises[0]?.duration ?? 45);
   const [totalElapsed,       setTotalElapsed]       = useState(0);
   const [completedExercises, setCompletedExercises] = useState([]);
   const [showComplete,       setShowComplete]       = useState(false);
   const [direction,          setDirection]          = useState(1);
   const intervalRef = useRef(null);
 
-  const current         = workoutExercises[currentIdx];
-  const next            = workoutExercises[currentIdx + 1];
-  const totalExercises  = workoutExercises.length;
+  const logSessionMutation = useMutation({
+    mutationFn: (payload) => api.post("/workouts/sessions", payload).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workout-history"] });
+      queryClient.invalidateQueries({ queryKey: ["workout-history-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["workout-history-last"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    },
+  });
+
+  const current        = exercises[currentIdx];
+  const next           = exercises[currentIdx + 1];
+  const totalExercises = exercises.length;
   const overallProgress = Math.round(
-    ((completedExercises.length + (currentSet - 1) / current.sets) / totalExercises) * 100
+    ((completedExercises.length + (currentSet - 1) / (current?.sets || 1)) / totalExercises) * 100
   );
 
-  // GSAP page entrance
   useGSAP(() => {
     gsap.fromTo(
       ".gsap-row",
@@ -144,7 +217,6 @@ export default function StartWorkout() {
     );
   }, { scope: pageRef });
 
-  // Timer tick
   useEffect(() => {
     if (isPlaying) {
       intervalRef.current = setInterval(() => {
@@ -158,6 +230,7 @@ export default function StartWorkout() {
       clearInterval(intervalRef.current);
     }
     return () => clearInterval(intervalRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, currentIdx, currentSet, isRest]);
 
   const goNextExercise = () => {
@@ -166,7 +239,7 @@ export default function StartWorkout() {
     if (currentIdx + 1 >= totalExercises) {
       setShowComplete(true);
     } else {
-      const nxt = workoutExercises[currentIdx + 1];
+      const nxt = exercises[currentIdx + 1];
       setCurrentIdx((i) => i + 1);
       setCurrentSet(1);
       setIsRest(false);
@@ -188,37 +261,48 @@ export default function StartWorkout() {
 
   const handleSkip  = () => { clearInterval(intervalRef.current); setIsPlaying(false); goNextExercise(); };
   const handleReset = () => { clearInterval(intervalRef.current); setIsPlaying(false); setIsRest(false); setTimeLeft(current.duration); };
+  const handleFinish = () => { clearInterval(intervalRef.current); setIsPlaying(false); setShowComplete(true); };
+
+  const handleDone = async () => {
+    const mins = Math.floor(totalElapsed / 60) || 1;
+    const kcal = Math.round(totalElapsed / 10);
+    await logSessionMutation.mutateAsync({
+      name:            dayData ? `${dayData.day} Workout` : sessionLabel ?? "Quick Workout",
+      type:            dayData?.category ?? "Strength",
+      duration_mins:   mins,
+      calories_burned: kcal,
+      exercises:       exercises.map((ex) => ({
+        exercise_name: ex.name,
+        sets:          ex.sets,
+        reps_display:  ex.reps ? `${ex.reps} reps` : `${ex.duration}s`,
+      })),
+    }).catch(() => {});
+    if (onDone) { onDone(); } else { navigate("/workouts"); }
+  };
 
   if (showComplete) {
     return (
       <WorkoutComplete
         totalTime={totalElapsed}
-        onClose={() => {
-          handleReset(); setCurrentIdx(0);
-          setCompletedExercises([]); setTotalElapsed(0);
-          setShowComplete(false); navigate("/dashboard");
-        }}
+        exerciseCount={totalExercises}
+        isLogging={logSessionMutation.isPending}
+        onClose={handleDone}
       />
     );
   }
 
-  // ── Shared sub-sections ──────────────────────────────────────────────────────
   const exerciseCard = (
     <div className="bg-overlay/5 border border-border/10 rounded-2xl overflow-hidden">
       <AnimatePresence mode="wait" initial={false}>
-        <ExerciseCard
-          key={current.id} exercise={current}
-          isRest={isRest} currentSet={currentSet} direction={direction}
-        />
+        <ExerciseCard key={current.id} exercise={current} isRest={isRest} direction={direction} />
       </AnimatePresence>
 
-      {/* Set indicators */}
       <div className="px-5 py-3 border-b border-border/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {Array.from({ length: current.sets }).map((_, i) => (
             <div key={i} className={`h-2 w-8 rounded-full transition-colors ${
-              i < currentSet - 1 ? "bg-primary"
-              : i === currentSet - 1 ? isRest ? "bg-sky-400" : "bg-primary"
+              i < currentSet - 1     ? "bg-primary"
+              : i === currentSet - 1 ? (isRest ? "bg-sky-400" : "bg-primary")
               : "bg-overlay/10"
             }`} />
           ))}
@@ -231,20 +315,15 @@ export default function StartWorkout() {
         )}
       </div>
 
-      {/* Timer + controls */}
       <div className="flex flex-col items-center py-6 gap-5">
-        <CircularTimer
-          timeLeft={timeLeft}
-          totalTime={isRest ? REST_DURATION : current.duration}
-          isRest={isRest}
-        />
+        <CircularTimer timeLeft={timeLeft} totalTime={isRest ? REST_DURATION : current.duration} isRest={isRest} />
         <div className="flex items-center gap-4">
           <button onClick={handleReset} className="w-11 h-11 rounded-full bg-overlay/10 hover:bg-overlay/15 flex items-center justify-center transition-colors">
             <RotateCcw size={18} className="text-foreground/80" />
           </button>
           <button
             onClick={() => setIsPlaying((p) => !p)}
-            className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-blue-700 hover:from-primary hover:to-blue-700 flex items-center justify-center transition-all shadow-lg shadow-primary/30"
+            className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-blue-700 flex items-center justify-center transition-all shadow-lg shadow-primary/30"
           >
             {isPlaying ? <Pause size={24} className="text-foreground" /> : <Play size={24} className="text-foreground ml-1" />}
           </button>
@@ -287,7 +366,7 @@ export default function StartWorkout() {
         <span className="text-xs text-muted">{totalExercises} exercises</span>
       </div>
       <div className="divide-y divide-border/5">
-        {workoutExercises.map((ex, idx) => {
+        {exercises.map((ex, idx) => {
           const isDone    = completedExercises.includes(ex.id);
           const isCurrent = idx === currentIdx;
           return (
@@ -322,27 +401,20 @@ export default function StartWorkout() {
     </div>
   );
 
-  const finishBtn = (
-    <button
-      onClick={() => setShowComplete(true)}
-      className="w-full py-4 bg-overlay/5 border border-primary/30 hover:bg-primary/10 text-primary font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
-    >
-      <CheckCircle2 size={18} />
-      Finish Workout
-    </button>
-  );
-
   return (
     <div ref={pageRef} className="max-w-5xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
 
       {/* Header */}
-      <div className="gsap-row flex items-center justify-end">
+      <div className="gsap-row flex items-center justify-between">
+        <p className="text-base font-black text-foreground">
+          {dayData ? `${dayData.day} · ${dayData.category}` : sessionLabel ?? "Quick Workout"}
+        </p>
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-overlay/5 border border-border/10 rounded-full px-3 sm:px-4 py-2">
+          <div className="flex items-center gap-1.5 bg-overlay/5 border border-border/10 rounded-full px-3 sm:px-4 py-2">
             <Flame size={14} className="text-primary" />
             <span className="text-xs sm:text-sm font-bold text-foreground/80">~{Math.round(totalElapsed / 10)} kcal</span>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-overlay/5 border border-border/10 rounded-full px-3 sm:px-4 py-2">
+          <div className="flex items-center gap-1.5 bg-overlay/5 border border-border/10 rounded-full px-3 sm:px-4 py-2">
             <Clock size={14} className="text-muted" />
             <span className="text-xs sm:text-sm font-bold text-foreground/80">
               {String(Math.floor(totalElapsed / 60)).padStart(2, "0")}:{String(totalElapsed % 60).padStart(2, "0")}
@@ -351,7 +423,7 @@ export default function StartWorkout() {
         </div>
       </div>
 
-      {/* Progress */}
+      {/* Progress bar */}
       <div className="gsap-row space-y-1">
         <div className="flex justify-between text-xs text-muted">
           <span>{completedExercises.length} of {totalExercises} exercises done</span>
@@ -365,20 +437,25 @@ export default function StartWorkout() {
         </div>
       </div>
 
-      {/* ── Mobile layout (stacked) ── */}
+      {/* Layout */}
       {isMobile ? (
         <div className="space-y-4">
           <div className="gsap-row">{exerciseCard}</div>
-          <div className="gsap-row">{finishBtn}</div>
+          <div className="gsap-row">
+            <button onClick={handleFinish} className="w-full py-4 bg-overlay/5 border border-primary/30 hover:bg-primary/10 text-primary font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+              <CheckCircle2 size={18} /> Finish Workout
+            </button>
+          </div>
           {next && <div className="gsap-row">{upNext}</div>}
           <div className="gsap-row">{exerciseList}</div>
         </div>
       ) : (
-        /* ── Desktop layout (2-col grid) ── */
         <div className="grid grid-cols-5 gap-5">
           <div className="col-span-3 space-y-4 gsap-row">
             {exerciseCard}
-            {finishBtn}
+            <button onClick={handleFinish} className="w-full py-4 bg-overlay/5 border border-primary/30 hover:bg-primary/10 text-primary font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+              <CheckCircle2 size={18} /> Finish Workout
+            </button>
           </div>
           <div className="col-span-2 space-y-4 gsap-row">
             {upNext}
@@ -387,5 +464,54 @@ export default function StartWorkout() {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
+export default function StartWorkout({ onDone }) {
+  const location = useLocation();
+  const dayData  = location.state?.dayData ?? null;
+  const fromPlan = !!dayData;
+
+  const { data: historyData, isLoading } = useQuery({
+    queryKey: ["workout-history-last"],
+    queryFn: () => api.get("/workouts/history?limit=1").then((r) => r.data),
+    enabled: !fromPlan,
+  });
+
+  // Loading state (only when fetching history)
+  if (!fromPlan && isLoading) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Determine exercises
+  let exercises;
+  let sessionLabel;
+  if (fromPlan) {
+    exercises    = (dayData.exercises ?? []).map(normalizeExercise);
+    sessionLabel = null;
+  } else {
+    const lastSession = historyData?.sessions?.[0];
+    exercises    = (lastSession?.exercises ?? []).map(normalizeHistoryExercise);
+    sessionLabel = lastSession?.name ?? null;
+  }
+
+  // No history — show empty state
+  if (!fromPlan && exercises.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <WorkoutSession
+      exercises={exercises}
+      dayData={dayData}
+      fromPlan={fromPlan}
+      sessionLabel={sessionLabel}
+      onDone={onDone}
+    />
   );
 }
